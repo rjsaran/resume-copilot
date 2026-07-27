@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { sortBySeverity } from "@/components/job-analysis/severity";
-import type { JobAnalysis, ScoreBreakdown } from "@/types/analysis";
+import type { JobAnalysis, ScoreBreakdown, FitSummary } from "@/types/analysis";
 
 function scoreColor(value: number) {
   if (value >= 75) return "bg-emerald-500";
@@ -23,14 +23,22 @@ const SCORE_DIMENSIONS: { key: keyof ScoreBreakdown; label: string }[] = [
   { key: "culture", label: "Culture" },
 ];
 
-function ScoreBreakdownRow({ label, value }: { label: string; value: number }) {
+function ScoreBreakdownRow({
+  label,
+  value,
+  fitLevel,
+}: {
+  label: string;
+  value: number;
+  fitLevel: FitSummary[keyof Omit<FitSummary, "overall">];
+}) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
     <div className="flex items-center gap-3">
       <span className="w-28 shrink-0 text-xs text-muted-foreground">{label}</span>
       <Progress value={clamped} indicatorClassName={scoreColor(clamped)} />
-      <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-        {clamped}
+      <span className="w-24 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+        {clamped} · {fitLevel}
       </span>
     </div>
   );
@@ -54,7 +62,7 @@ export function MatchScoreExplainer({ analysis }: { analysis: JobAnalysis }) {
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
           <span className="text-4xl font-semibold tabular-nums">{clamped}</span>
-          <span className="text-sm text-muted-foreground">/ 100</span>
+          <span className="text-sm text-muted-foreground">/ 100 — {analysis.fitSummary.overall}</span>
         </div>
         <Progress
           value={clamped}
@@ -63,7 +71,12 @@ export function MatchScoreExplainer({ analysis }: { analysis: JobAnalysis }) {
 
         <div className="flex flex-col gap-1.5 pt-1">
           {SCORE_DIMENSIONS.map(({ key, label }) => (
-            <ScoreBreakdownRow key={key} label={label} value={analysis.scoreBreakdown[key]} />
+            <ScoreBreakdownRow
+              key={key}
+              label={label}
+              value={analysis.scoreBreakdown[key]}
+              fitLevel={analysis.fitSummary[key]}
+            />
           ))}
         </div>
 

@@ -45,10 +45,10 @@ export const applications = pgTable(
     jobHash: text("job_hash").notNull(),
     status: applicationStatusEnum("status").notNull().default("ANALYZED"),
     overallScore: integer("overall_score").notNull(),
-    atsScore: integer("ats_score").notNull(),
-    // "High" | "Medium" | "Low" - never a fabricated percentage. Kept purely
-    // for reference; nothing currently sorts/filters on this column.
-    interviewConfidence: text("interview_confidence").notNull(),
+    // "Apply" | "Apply After Tailoring" | "Consider Applying" | "Probably Skip"
+    // (analysis.applicationRecommendation.decision). Kept purely for
+    // reference; nothing currently sorts/filters on this column.
+    applicationDecision: text("application_decision").notNull(),
     verdict: text("verdict").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

@@ -33,14 +33,9 @@ export async function saveAnalysis(
   input: SaveAnalysisInput,
 ): Promise<Application> {
   const jobHash = hashJobUrl(input.jobUrl);
-  const {
-    company,
-    jobTitle,
-    matchScore,
-    atsScore,
-    interviewConfidence,
-    recommendationStatus,
-  } = input.analysis;
+  const { company, jobTitle, matchScore, applicationRecommendation, recommendationStatus } =
+    input.analysis;
+  const applicationDecision = applicationRecommendation.decision;
   const analysisJson = JSON.stringify(input.analysis);
 
   return db.transaction(async (tx) => {
@@ -53,8 +48,7 @@ export async function saveAnalysis(
         jobUrl: input.jobUrl,
         jobHash,
         overallScore: matchScore,
-        atsScore,
-        interviewConfidence,
+        applicationDecision,
         verdict: recommendationStatus,
       })
       .onConflictDoUpdate({
@@ -63,8 +57,7 @@ export async function saveAnalysis(
           company,
           jobTitle,
           overallScore: matchScore,
-          atsScore,
-          interviewConfidence,
+          applicationDecision,
           verdict: recommendationStatus,
           updatedAt: new Date(),
         },

@@ -6,7 +6,6 @@ import { GapCardList } from "@/components/job-analysis/GapCardList";
 import { QuickWins } from "@/components/job-analysis/QuickWins";
 import { RecruiterReviewCard } from "@/components/job-analysis/RecruiterReviewCard";
 import { NextStepsChecklist } from "@/components/job-analysis/NextStepsChecklist";
-import { SecondaryDetails } from "@/components/job-analysis/SecondaryDetails";
 import type { JobAnalysis } from "@/types/analysis";
 import type { ApplicationStatus } from "@/lib/db/schema";
 
@@ -48,7 +47,6 @@ export function JobAnalysisDashboard({
         hasTailoredVersion={hasTailoredVersion}
         applicationStatus={applicationStatus}
       />
-      <SecondaryDetails analysis={analysis} />
     </div>
   );
 }

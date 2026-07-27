@@ -7,10 +7,11 @@ import { cn } from "@/lib/utils";
 import { RECOMMENDATION_META } from "@/lib/badge-meta";
 import type { JobAnalysis } from "@/types/analysis";
 
-const CONFIDENCE_LABEL: Record<JobAnalysis["interviewConfidence"], string> = {
-  High: "High interview confidence",
-  Medium: "Medium interview confidence",
-  Low: "Low interview confidence",
+const DECISION_BADGE_CLASSNAME: Record<JobAnalysis["applicationRecommendation"]["decision"], string> = {
+  Apply: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  "Apply After Tailoring": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  "Consider Applying": "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  "Probably Skip": "bg-muted text-muted-foreground",
 };
 
 /**
@@ -52,12 +53,20 @@ export function HeroRecommendationCard({
               </h2>
             </div>
           </div>
-          <Badge className={meta.badgeClassName}>
-            {CONFIDENCE_LABEL[analysis.interviewConfidence]}
-          </Badge>
+          <div className="flex flex-col items-end gap-1.5">
+            <Badge className={DECISION_BADGE_CLASSNAME[analysis.applicationRecommendation.decision]}>
+              {analysis.applicationRecommendation.decision}
+            </Badge>
+            <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+              {analysis.competitionRisk} competition
+            </Badge>
+          </div>
         </div>
 
         <p className="text-base leading-relaxed text-foreground/90">
+          {analysis.applicationRecommendation.reason}
+        </p>
+        <p className="text-sm leading-relaxed text-muted-foreground">
           {analysis.summary}
         </p>
 
