@@ -1,4 +1,5 @@
 import type { Browser } from "playwright-core";
+import { logger, errorContext } from "@/lib/logger";
 
 export class ResumePdfError extends Error {}
 
@@ -8,6 +9,8 @@ export interface PdfCookie {
   domain: string;
   path: string;
 }
+
+const log = logger.child({ module: "generateResumePdf" });
 
 /**
  * The preview route sits behind auth middleware (it's also a real page a
@@ -22,6 +25,7 @@ async function launchBrowser(): Promise<Browser> {
   // binary. Locally, that same binary doesn't run on macOS/Windows, so dev
   // uses the full `playwright` package's own bundled Chromium instead.
   if (process.env.VERCEL) {
+    log.debug("Launching @sparticuz/chromium (Vercel runtime)");
     const [{ chromium }, chromiumBinary] = await Promise.all([
       import("playwright-core"),
       import("@sparticuz/chromium").then((m) => m.default),
@@ -33,6 +37,7 @@ async function launchBrowser(): Promise<Browser> {
     });
   }
 
+  log.debug("Launching local Playwright Chromium (dev runtime)");
   const { chromium } = await import("playwright");
   return chromium.launch();
 }
@@ -49,6 +54,7 @@ export async function generateResumePdf(url: string, cookies: PdfCookie[] = []):
   try {
     browser = await launchBrowser();
   } catch (error) {
+    log.error("Browser launch failed", errorContext(error));
     throw new ResumePdfError(
       error instanceof Error
         ? `Failed to launch the PDF renderer: ${error.message}`
@@ -66,6 +72,7 @@ export async function generateResumePdf(url: string, cookies: PdfCookie[] = []):
     const response = await page.goto(url, { waitUntil: "networkidle" });
 
     if (!response || !response.ok()) {
+      log.error("Preview page failed to load", { status: response?.status() ?? null });
       throw new ResumePdfError(
         `Could not load the resume preview (status ${response?.status() ?? "unknown"}).`
       );

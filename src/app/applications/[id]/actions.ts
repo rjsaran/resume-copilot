@@ -24,14 +24,20 @@ import { LLMProviderError } from "@/services/llm/types";
 import { isJobAnalysis } from "@/types/analysis";
 import { isResumeData, type ResumeData } from "@/types/resume";
 import type { ApplicationStatus, ResumeVersion } from "@/lib/db/schema";
+import { logger, errorContext } from "@/lib/logger";
 
 export async function updateApplicationStatusAction(
   applicationId: string,
   status: ApplicationStatus
 ) {
   const user = await requireUser();
+  const log = logger.child({ action: "updateApplicationStatusAction", userId: user.id, applicationId });
+
   const application = await getApplication(applicationId, user.id);
-  if (!application) return;
+  if (!application) {
+    log.warn("Status update blocked: application not found");
+    return;
+  }
 
   if (application.status !== status) {
     await updateStatus(applicationId, user.id, status);
@@ -40,6 +46,7 @@ export async function updateApplicationStatusAction(
       stage: STATUS_LABELS[status],
       notes: `Status changed from ${STATUS_LABELS[application.status]} to ${STATUS_LABELS[status]}.`,
     });
+    log.info("Application status changed", { from: application.status, to: status });
   }
 
   revalidatePath(`/applications/${applicationId}`);
@@ -67,13 +74,18 @@ export async function generateTailoredResumeAction(
   applicationId: string
 ): Promise<GenerateTailoredResumeResult> {
   const user = await requireUser();
+  const log = logger.child({ action: "generateTailoredResumeAction", userId: user.id, applicationId });
+  const startedAt = Date.now();
+
   const application = await getApplication(applicationId, user.id);
 
   if (!application) {
+    log.warn("Tailoring blocked: application not found");
     return { success: false, error: "Application not found." };
   }
 
   if (!application.analysis) {
+    log.warn("Tailoring blocked: no analysis for application");
     return { success: false, error: "No analysis found for this application." };
   }
 
@@ -81,10 +93,12 @@ export async function generateTailoredResumeAction(
   try {
     analysisData = JSON.parse(application.analysis.analysisJson);
   } catch {
+    log.error("Tailoring blocked: stored analysis JSON is invalid");
     return { success: false, error: "Stored analysis JSON is invalid." };
   }
 
   if (!isJobAnalysis(analysisData)) {
+    log.error("Tailoring blocked: stored analysis JSON did not match expected shape");
     return {
       success: false,
       error: "Stored analysis JSON did not match the expected shape.",
@@ -95,6 +109,7 @@ export async function generateTailoredResumeAction(
   try {
     careerKnowledgeBase = await requireKnowledgeBase(user.id);
   } catch (error) {
+    log.warn("Tailoring blocked: no knowledge base", errorContext(error));
     return {
       success: false,
       error:
@@ -108,6 +123,7 @@ export async function generateTailoredResumeAction(
   try {
     provider = await getUserLlmProvider(user.id);
   } catch (error) {
+    log.warn("Tailoring blocked: no LLM provider configured", errorContext(error));
     return {
       success: false,
       error: error instanceof LLMProviderError ? error.message : "No LLM provider configured.",
@@ -152,6 +168,7 @@ export async function generateTailoredResumeAction(
       provider
     );
   } catch (error) {
+    log.error("Tailored resume generation failed", { ...errorContext(error), durationMs: Date.now() - startedAt });
     return {
       success: false,
       error:
@@ -167,6 +184,11 @@ export async function generateTailoredResumeAction(
     name: `Tailored v${tailoredCount + 1}`,
     type: "TAILORED",
     resume: tailoredResume,
+  });
+
+  log.info("Tailored resume generated", {
+    resumeVersionId: resumeVersion.id,
+    durationMs: Date.now() - startedAt,
   });
 
   revalidatePath(`/applications/${applicationId}`);
@@ -191,17 +213,21 @@ export async function updateResumeVersionAction(
   resume: ResumeData
 ): Promise<UpdateResumeVersionResult> {
   const user = await requireUser();
+  const log = logger.child({ action: "updateResumeVersionAction", userId: user.id, applicationId, versionId });
 
   const existing = await getResumeVersion(versionId);
   if (!existing || existing.application.userId !== user.id) {
+    log.warn("Resume version edit blocked: version not found or not owned by user");
     return { success: false, error: "Resume version not found." };
   }
 
   if (!isResumeData(resume)) {
+    log.warn("Resume version edit blocked: payload did not match expected shape");
     return { success: false, error: "Resume data did not match the expected shape." };
   }
 
   const resumeVersion = await updateResumeVersion({ id: versionId, resume });
+  log.info("Resume version edited");
   revalidatePath(`/applications/${applicationId}`);
 
   return { success: true, resumeVersion };

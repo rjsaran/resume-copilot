@@ -5,6 +5,7 @@ import {
 } from "@/services/resume/prompts/resumeTailorPrompt";
 import { sanitizeResumeData } from "@/lib/resume/sanitize";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
+import { logger } from "@/lib/logger";
 
 export type GenerateTailoredResumeInput = ResumeTailorPromptInput;
 
@@ -41,10 +42,14 @@ export async function generateTailoredResume(
   try {
     parsed = JSON.parse(outputText);
   } catch {
+    logger.warn("Resume tailoring: model output was not valid JSON", { module: "resumeTailor" });
     throw new ResumeTailorError("The model did not return valid JSON.");
   }
 
   if (!isResumeData(parsed)) {
+    logger.warn("Resume tailoring: model JSON did not match expected resume schema", {
+      module: "resumeTailor",
+    });
     throw new ResumeTailorError(
       "The model's JSON did not match the expected resume schema."
     );

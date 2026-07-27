@@ -11,6 +11,7 @@ import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
 import { analyzeJob, JobAnalysisError } from "@/services/analysis/jobAnalyzer";
 import { getCurrentUser } from "@/lib/auth";
+import { logger, errorContext } from "@/lib/logger";
 
 const READER_BASE_URL = "https://r.jina.ai/";
 const FETCH_TIMEOUT_MS = 15_000;
@@ -20,6 +21,8 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
+
+  const log = logger.child({ route: "/api/analyze", userId: user.id });
 
   const jobUrl = request.nextUrl.searchParams.get("url");
   const forceReanalyze = request.nextUrl.searchParams.get("force") === "true";
@@ -35,11 +38,14 @@ export async function GET(request: NextRequest) {
   try {
     parsedUrl = new URL(jobUrl);
   } catch {
+    log.warn("Rejected invalid job URL", { jobUrl });
     return NextResponse.json(
       { error: "'url' must be a valid absolute URL." },
       { status: 400 }
     );
   }
+
+  log.info("Analysis requested", { jobHost: parsedUrl.hostname, forceReanalyze });
 
   if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
     return NextResponse.json(
@@ -53,7 +59,8 @@ export async function GET(request: NextRequest) {
     jobResponse = await fetch(`${READER_BASE_URL}${parsedUrl.toString()}`, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-  } catch {
+  } catch (error) {
+    log.error("Failed to fetch job posting", errorContext(error));
     return NextResponse.json(
       { error: "Failed to reach the job posting URL." },
       { status: 502 }
@@ -61,6 +68,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!jobResponse.ok) {
+    log.warn("Job posting fetch returned non-OK status", { status: jobResponse.status });
     return NextResponse.json(
       { error: `Job posting fetch failed with status ${jobResponse.status}.` },
       { status: 502 }
@@ -89,6 +97,7 @@ export async function GET(request: NextRequest) {
         cachedAnalysis = null;
       }
       if (cachedAnalysis && isJobAnalysis(cachedAnalysis)) {
+        log.info("Served cached analysis", { applicationId: existing.id });
         return NextResponse.json({
           analysis: cachedAnalysis,
           applicationId: existing.id,
@@ -102,6 +111,7 @@ export async function GET(request: NextRequest) {
   try {
     careerHistory = careerKnowledgeBaseToText(await requireKnowledgeBase(user.id));
   } catch (error) {
+    log.warn("Analysis blocked: no knowledge base", errorContext(error));
     return NextResponse.json(
       {
         error:
@@ -117,6 +127,7 @@ export async function GET(request: NextRequest) {
   try {
     provider = await getUserLlmProvider(user.id);
   } catch (error) {
+    log.warn("Analysis blocked: no LLM provider configured", errorContext(error));
     return NextResponse.json(
       {
         error: error instanceof LLMProviderError ? error.message : "No LLM provider configured.",
@@ -129,6 +140,7 @@ export async function GET(request: NextRequest) {
   try {
     analysis = await analyzeJob({ careerHistory, jobDescription }, provider);
   } catch (error) {
+    log.error("Job analysis failed", errorContext(error));
     const message = error instanceof JobAnalysisError ? error.message : "Failed to reach the model.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
@@ -143,12 +155,15 @@ export async function GET(request: NextRequest) {
       model: provider.modelName,
     });
     applicationId = application.id;
-  } catch {
+  } catch (error) {
+    log.error("Analysis succeeded but failed to save", errorContext(error));
     return NextResponse.json(
       { error: "Analysis succeeded but could not be saved to the database." },
       { status: 500 }
     );
   }
+
+  log.info("Analysis completed", { applicationId, matchScore: analysis.matchScore });
 
   return NextResponse.json({ analysis, applicationId, cached: false });
 }

@@ -8,6 +8,7 @@ import {
   type KnowledgeBaseImportPromptInput,
 } from "@/services/knowledgeBase/prompts/knowledgeBaseImportPrompt";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
+import { logger } from "@/lib/logger";
 
 export type ImportKnowledgeBaseInput = KnowledgeBaseImportPromptInput;
 
@@ -42,10 +43,16 @@ export async function importKnowledgeBaseFromText(
   try {
     parsed = JSON.parse(outputText);
   } catch {
+    logger.warn("Knowledge base import: model output was not valid JSON", {
+      module: "knowledgeBaseImporter",
+    });
     throw new KnowledgeBaseImportError("The model did not return valid JSON.");
   }
 
   if (!isCareerKnowledgeBase(parsed)) {
+    logger.warn("Knowledge base import: model JSON did not match expected schema", {
+      module: "knowledgeBaseImporter",
+    });
     throw new KnowledgeBaseImportError(
       "The model's JSON did not match the expected knowledge base schema."
     );

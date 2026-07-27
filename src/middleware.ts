@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { logger } from "@/lib/logger";
 
 const PUBLIC_PATHS = ["/sign-in", "/auth/callback"];
 
@@ -39,12 +40,16 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user && !isPublicPath(request.nextUrl.pathname)) {
+    logger.debug("Redirecting unauthenticated request to sign-in", {
+      path: request.nextUrl.pathname,
+    });
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(signInUrl);
   }
 
   if (user && request.nextUrl.pathname === "/sign-in") {
+    logger.debug("Redirecting signed-in user away from sign-in", { userId: user.id });
     return NextResponse.redirect(new URL("/applications", request.url));
   }
 

@@ -4,6 +4,7 @@ import {
   type JobAnalysisPromptInput,
 } from "@/services/analysis/prompts/jobAnalysisPrompt";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
+import { logger } from "@/lib/logger";
 
 export type AnalyzeJobInput = JobAnalysisPromptInput;
 
@@ -37,10 +38,12 @@ export async function analyzeJob(
   try {
     parsed = JSON.parse(outputText);
   } catch {
+    logger.warn("Job analysis: model output was not valid JSON", { module: "jobAnalyzer" });
     throw new JobAnalysisError("The model did not return valid JSON.");
   }
 
   if (!isJobAnalysis(parsed)) {
+    logger.warn("Job analysis: model JSON did not match expected shape", { module: "jobAnalyzer" });
     throw new JobAnalysisError("The model's JSON did not match the expected shape.");
   }
 

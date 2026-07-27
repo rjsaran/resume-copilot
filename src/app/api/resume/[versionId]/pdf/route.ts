@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getResumeVersion } from "@/lib/repositories/resumeRepository";
 import { generateResumePdf, ResumePdfError } from "@/lib/pdf/generateResumePdf";
+import { logger, errorContext } from "@/lib/logger";
 
 function slugify(text: string): string {
   return text
@@ -20,9 +21,12 @@ export async function GET(
   }
 
   const { versionId } = await params;
+  const log = logger.child({ route: "/api/resume/[versionId]/pdf", userId: user.id, versionId });
+
   const version = await getResumeVersion(versionId);
 
   if (!version || version.application.userId !== user.id) {
+    log.warn("PDF export blocked: resume version not found or not owned by user");
     return NextResponse.json({ error: "Resume version not found." }, { status: 404 });
   }
 
@@ -41,14 +45,18 @@ export async function GET(
     path: "/",
   }));
 
+  const startedAt = Date.now();
   let pdfBuffer: Buffer;
   try {
     pdfBuffer = await generateResumePdf(previewUrl.toString(), cookies);
   } catch (error) {
+    log.error("PDF generation failed", { ...errorContext(error), durationMs: Date.now() - startedAt });
     const message =
       error instanceof ResumePdfError ? error.message : "Failed to generate PDF.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+
+  log.info("PDF generated", { durationMs: Date.now() - startedAt, bytes: pdfBuffer.length });
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,

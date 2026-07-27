@@ -11,6 +11,7 @@ import {
 import { extractResumeTextFromPdf, PdfTextExtractionError } from "@/lib/pdf/extractResumeText";
 import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
+import { logger, errorContext } from "@/lib/logger";
 
 export interface SaveKnowledgeBaseResult {
   success: boolean;
@@ -21,12 +22,15 @@ export async function saveKnowledgeBaseAction(
   data: CareerKnowledgeBase
 ): Promise<SaveKnowledgeBaseResult> {
   const user = await requireUser();
+  const log = logger.child({ action: "saveKnowledgeBaseAction", userId: user.id });
 
   if (!isCareerKnowledgeBase(data)) {
+    log.warn("Knowledge base save blocked: payload did not match expected schema");
     return { success: false, error: "Knowledge base did not match the expected schema." };
   }
 
   await upsertKnowledgeBase(user.id, data);
+  log.info("Knowledge base saved");
   revalidatePath("/knowledge-base");
 
   return { success: true };
@@ -49,8 +53,11 @@ const MAX_IMPORT_TEXT_LENGTH = 20_000;
  */
 export async function importKnowledgeBaseAction(file: File): Promise<ImportKnowledgeBaseResult> {
   const user = await requireUser();
+  const log = logger.child({ action: "importKnowledgeBaseAction", userId: user.id });
+  const startedAt = Date.now();
 
   if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    log.warn("Import blocked: uploaded file is not a PDF", { fileType: file.type });
     return { success: false, error: "Please upload a PDF file." };
   }
 
@@ -58,6 +65,7 @@ export async function importKnowledgeBaseAction(file: File): Promise<ImportKnowl
   try {
     sourceText = await extractResumeTextFromPdf(await file.arrayBuffer());
   } catch (error) {
+    log.error("PDF text extraction failed", errorContext(error));
     return {
       success: false,
       error: error instanceof PdfTextExtractionError ? error.message : "Failed to read that PDF.",
@@ -65,6 +73,7 @@ export async function importKnowledgeBaseAction(file: File): Promise<ImportKnowl
   }
 
   if (sourceText.length > MAX_IMPORT_TEXT_LENGTH) {
+    log.warn("Import blocked: extracted text too long", { textLength: sourceText.length });
     return {
       success: false,
       error: `That PDF has too much extractable text (${sourceText.length.toLocaleString()} characters, max ${MAX_IMPORT_TEXT_LENGTH.toLocaleString()}) — trim it to the relevant pages and try again.`,
@@ -75,6 +84,7 @@ export async function importKnowledgeBaseAction(file: File): Promise<ImportKnowl
   try {
     provider = await getUserLlmProvider(user.id);
   } catch (error) {
+    log.warn("Import blocked: no LLM provider configured", errorContext(error));
     return {
       success: false,
       error: error instanceof LLMProviderError ? error.message : "No LLM provider configured.",
@@ -83,8 +93,13 @@ export async function importKnowledgeBaseAction(file: File): Promise<ImportKnowl
 
   try {
     const knowledgeBase = await importKnowledgeBaseFromText({ sourceText }, provider);
+    log.info("Knowledge base imported from PDF", {
+      textLength: sourceText.length,
+      durationMs: Date.now() - startedAt,
+    });
     return { success: true, knowledgeBase };
   } catch (error) {
+    log.error("Knowledge base import failed", { ...errorContext(error), durationMs: Date.now() - startedAt });
     return {
       success: false,
       error:
