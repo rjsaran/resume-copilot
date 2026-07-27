@@ -8,6 +8,7 @@ import {
   importKnowledgeBaseFromText,
   KnowledgeBaseImportError,
 } from "@/services/knowledgeBase/knowledgeBaseImporter";
+import { extractResumeTextFromPdf, PdfTextExtractionError } from "@/lib/pdf/extractResumeText";
 import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
 
@@ -40,25 +41,33 @@ export interface ImportKnowledgeBaseResult {
 const MAX_IMPORT_TEXT_LENGTH = 20_000;
 
 /**
- * Parses pasted resume or LinkedIn profile text into a CareerKnowledgeBase
- * draft via the user's LLM provider. Does NOT save it — the caller (the
- * knowledge base editor) loads the draft for review/editing, and only
- * saveKnowledgeBaseAction persists it, so a bad or unwanted import never
- * touches the user's stored data.
+ * Extracts text from an uploaded resume PDF and parses it into a
+ * CareerKnowledgeBase draft via the user's LLM provider. Does NOT save it —
+ * the caller (the knowledge base editor) loads the draft for review/editing,
+ * and only saveKnowledgeBaseAction persists it, so a bad or unwanted import
+ * never touches the user's stored data.
  */
-export async function importKnowledgeBaseAction(
-  sourceText: string
-): Promise<ImportKnowledgeBaseResult> {
+export async function importKnowledgeBaseAction(file: File): Promise<ImportKnowledgeBaseResult> {
   const user = await requireUser();
 
-  const trimmed = sourceText.trim();
-  if (!trimmed) {
-    return { success: false, error: "Paste your resume or LinkedIn profile text first." };
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    return { success: false, error: "Please upload a PDF file." };
   }
-  if (trimmed.length > MAX_IMPORT_TEXT_LENGTH) {
+
+  let sourceText: string;
+  try {
+    sourceText = await extractResumeTextFromPdf(await file.arrayBuffer());
+  } catch (error) {
     return {
       success: false,
-      error: `That's too much text (${trimmed.length.toLocaleString()} characters, max ${MAX_IMPORT_TEXT_LENGTH.toLocaleString()}) — trim it to the relevant sections and try again.`,
+      error: error instanceof PdfTextExtractionError ? error.message : "Failed to read that PDF.",
+    };
+  }
+
+  if (sourceText.length > MAX_IMPORT_TEXT_LENGTH) {
+    return {
+      success: false,
+      error: `That PDF has too much extractable text (${sourceText.length.toLocaleString()} characters, max ${MAX_IMPORT_TEXT_LENGTH.toLocaleString()}) — trim it to the relevant pages and try again.`,
     };
   }
 
@@ -73,7 +82,7 @@ export async function importKnowledgeBaseAction(
   }
 
   try {
-    const knowledgeBase = await importKnowledgeBaseFromText({ sourceText: trimmed }, provider);
+    const knowledgeBase = await importKnowledgeBaseFromText({ sourceText }, provider);
     return { success: true, knowledgeBase };
   } catch (error) {
     return {

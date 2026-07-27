@@ -1,5 +1,5 @@
 export interface KnowledgeBaseImportPromptInput {
-  /** Raw pasted text: resume copy/paste, or a LinkedIn profile/export. */
+  /** Raw text extracted from an uploaded resume PDF. */
   sourceText: string;
 }
 
@@ -9,8 +9,9 @@ export interface KnowledgeBaseImportPrompt {
 }
 
 const SYSTEM_INSTRUCTION = [
-  "You are transcribing a candidate's career history from raw, messy source text (a pasted resume, or " +
-    "a pasted LinkedIn profile/export) into a structured career knowledge base as JSON.",
+  "You are transcribing a candidate's career history from raw text extracted from a resume PDF " +
+    "(extraction can leave layout artifacts: odd line breaks, column text interleaved, repeated headers/footers) " +
+    "into a structured career knowledge base as JSON.",
   "",
   "The knowledge base is a full history — every job, project, skill, and education fact the candidate has " +
     "— not a resume. It is later used as the source material a separate tailoring step selects and rewords " +

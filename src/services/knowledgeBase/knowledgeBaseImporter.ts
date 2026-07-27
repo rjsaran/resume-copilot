@@ -14,8 +14,8 @@ export type ImportKnowledgeBaseInput = KnowledgeBaseImportPromptInput;
 export class KnowledgeBaseImportError extends Error {}
 
 /**
- * Calls the user's configured LLM provider to transcribe pasted resume or
- * LinkedIn text into a CareerKnowledgeBase JSON draft. Never persists
+ * Calls the user's configured LLM provider to transcribe text extracted
+ * from a resume PDF into a CareerKnowledgeBase JSON draft. Never persists
  * anything — the caller is expected to let the user review/edit the result
  * before saving it (see knowledge-base-workspace.tsx).
  */
