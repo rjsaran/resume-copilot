@@ -2,19 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutList, Sparkles, BookUser, Settings, LogOut } from "lucide-react";
+import { LayoutList, Sparkles, BookUser, KeyRound, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLinkItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 const NAV_ITEMS = [
   { href: "/", label: "Analyze", icon: Sparkles },
   { href: "/applications", label: "Applications", icon: LayoutList },
-  { href: "/knowledge-base", label: "Knowledge Base", icon: BookUser },
 ] as const;
 
 interface NavBarProps {
   userEmail?: string;
   onSignOut: () => void | Promise<void>;
+}
+
+function initialsFromEmail(email: string): string {
+  return email.slice(0, 2).toUpperCase();
 }
 
 export function NavBar({ userEmail, onSignOut }: NavBarProps) {
@@ -62,29 +74,31 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
               </Link>
             );
           })}
-          <Link
-            href="/settings"
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              pathname.startsWith("/settings")
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Settings className="size-3.5" />
-            Settings
-          </Link>
           {userEmail && (
-            <div className="ml-2 flex items-center gap-2 border-l pl-3">
-              <span className="hidden text-xs text-muted-foreground sm:inline">
-                {userEmail}
-              </span>
-              <form action={onSignOut}>
-                <Button type="submit" variant="ghost" size="icon-sm" title="Sign out">
-                  <LogOut className="size-3.5" />
-                </Button>
-              </form>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="ml-2 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                <Avatar>
+                  <AvatarFallback>{initialsFromEmail(userEmail)}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel className="truncate">{userEmail}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuLinkItem render={<Link href="/knowledge-base" />}>
+                  <BookUser />
+                  Knowledge Base
+                </DropdownMenuLinkItem>
+                <DropdownMenuLinkItem render={<Link href="/settings" />}>
+                  <KeyRound />
+                  API Keys
+                </DropdownMenuLinkItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onSignOut()}>
+                  <LogOut />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </nav>
       </div>

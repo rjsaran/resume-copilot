@@ -5,22 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { isCareerKnowledgeBase, type CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
-import {
-  saveKnowledgeBaseAction,
-  importKnowledgeBaseFromFileAction,
-} from "@/app/knowledge-base/actions";
+import { saveKnowledgeBaseAction } from "@/app/knowledge-base/actions";
 
 interface KnowledgeBaseEditorProps {
   initialData: CareerKnowledgeBase;
-  hasSeedFile: boolean;
 }
 
-export function KnowledgeBaseEditor({ initialData, hasSeedFile }: KnowledgeBaseEditorProps) {
+export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
   const [text, setText] = useState(() => JSON.stringify(initialData, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isSaving, startSaving] = useTransition();
-  const [isImporting, startImporting] = useTransition();
 
   function handleSave() {
     setSaved(false);
@@ -49,19 +44,6 @@ export function KnowledgeBaseEditor({ initialData, hasSeedFile }: KnowledgeBaseE
     });
   }
 
-  function handleImport() {
-    setError(null);
-    setSaved(false);
-    startImporting(async () => {
-      const result = await importKnowledgeBaseFromFileAction();
-      if (result.success && result.data) {
-        setText(JSON.stringify(result.data, null, 2));
-      } else {
-        setError(result.error ?? "Failed to import.");
-      }
-    });
-  }
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -72,16 +54,9 @@ export function KnowledgeBaseEditor({ initialData, hasSeedFile }: KnowledgeBaseE
             are built from. Edit the JSON directly and save.
           </CardDescription>
         </div>
-        <div className="flex shrink-0 gap-2">
-          {hasSeedFile && (
-            <Button variant="outline" size="sm" onClick={handleImport} disabled={isImporting}>
-              {isImporting ? "Importing…" : "Import from file"}
-            </Button>
-          )}
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving…" : "Save"}
-          </Button>
-        </div>
+        <Button size="sm" onClick={handleSave} disabled={isSaving} className="shrink-0">
+          {isSaving ? "Saving…" : "Save"}
+        </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         <Textarea
