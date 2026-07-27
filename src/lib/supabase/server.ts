@@ -24,11 +24,11 @@ export async function createClient() {
             }
           } catch {
             // Called from a Server Component render (not a Server Action or
-            // Route Handler) — the middleware below refreshes the session
+            // Route Handler) - the middleware below refreshes the session
             // instead, so this can be safely ignored.
           }
         },
       },
-    }
+    },
   );
 }

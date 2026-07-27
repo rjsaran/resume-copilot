@@ -1,5 +1,14 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, integer, timestamp, pgEnum, varchar, uniqueIndex, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  integer,
+  timestamp,
+  pgEnum,
+  varchar,
+  uniqueIndex,
+  index,
+} from "drizzle-orm/pg-core";
 
 export const applicationStatusEnum = pgEnum("application_status", [
   "ANALYZED",
@@ -11,9 +20,17 @@ export const applicationStatusEnum = pgEnum("application_status", [
   "WITHDRAWN",
 ]);
 
-export const resumeVersionTypeEnum = pgEnum("resume_version_type", ["MASTER", "TAILORED"]);
+export const resumeVersionTypeEnum = pgEnum("resume_version_type", [
+  "MASTER",
+  "TAILORED",
+]);
 
-export const llmProviderEnum = pgEnum("llm_provider", ["GEMINI", "CLAUDE", "OPENAI", "OPENROUTER"]);
+export const llmProviderEnum = pgEnum("llm_provider", [
+  "GEMINI",
+  "CLAUDE",
+  "OPENAI",
+  "OPENROUTER",
+]);
 
 export const applications = pgTable(
   "applications",
@@ -29,7 +46,7 @@ export const applications = pgTable(
     status: applicationStatusEnum("status").notNull().default("ANALYZED"),
     overallScore: integer("overall_score").notNull(),
     atsScore: integer("ats_score").notNull(),
-    // "High" | "Medium" | "Low" — never a fabricated percentage. Kept purely
+    // "High" | "Medium" | "Low" - never a fabricated percentage. Kept purely
     // for reference; nothing currently sorts/filters on this column.
     interviewConfidence: text("interview_confidence").notNull(),
     verdict: text("verdict").notNull(),
@@ -37,19 +54,25 @@ export const applications = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex("applications_user_id_job_hash").on(table.userId, table.jobHash),
+    uniqueIndex("applications_user_id_job_hash").on(
+      table.userId,
+      table.jobHash,
+    ),
     index("applications_user_id").on(table.userId),
-  ]
+  ],
 );
 
-export const applicationsRelations = relations(applications, ({ one, many }) => ({
-  analysis: one(analyses, {
-    fields: [applications.id],
-    references: [analyses.applicationId],
+export const applicationsRelations = relations(
+  applications,
+  ({ one, many }) => ({
+    analysis: one(analyses, {
+      fields: [applications.id],
+      references: [analyses.applicationId],
+    }),
+    resumeVersions: many(resumeVersions),
+    outcomes: many(outcomes),
   }),
-  resumeVersions: many(resumeVersions),
-  outcomes: many(outcomes),
-}));
+);
 
 export const analyses = pgTable("analyses", {
   id: varchar("id")
@@ -87,7 +110,7 @@ export const resumeVersions = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => [index("resume_versions_application_id").on(table.applicationId)]
+  (table) => [index("resume_versions_application_id").on(table.applicationId)],
 );
 
 export const resumeVersionsRelations = relations(resumeVersions, ({ one }) => ({
@@ -110,7 +133,7 @@ export const outcomes = pgTable(
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => [index("outcomes_application_id").on(table.applicationId)]
+  (table) => [index("outcomes_application_id").on(table.applicationId)],
 );
 
 export const outcomesRelations = relations(outcomes, ({ one }) => ({
@@ -122,7 +145,7 @@ export const outcomesRelations = relations(outcomes, ({ one }) => ({
 
 /**
  * One row per Supabase-authenticated user. userId is the Supabase auth
- * user's UUID (auth.users.id) — stored as a plain string since Supabase
+ * user's UUID (auth.users.id) - stored as a plain string since Supabase
  * Auth and this app's data live in separate Postgres databases (Neon vs
  * the Supabase project's own database), so there is no DB-level FK here.
  */
@@ -131,12 +154,14 @@ export const userSettings = pgTable("user_settings", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull().unique(),
-  activeProvider: llmProviderEnum("active_provider").notNull().default("GEMINI"),
+  activeProvider: llmProviderEnum("active_provider")
+    .notNull()
+    .default("GEMINI"),
   encryptedGeminiKey: text("encrypted_gemini_key"),
   encryptedClaudeKey: text("encrypted_claude_key"),
   encryptedOpenAiKey: text("encrypted_openai_key"),
   encryptedOpenRouterKey: text("encrypted_openrouter_key"),
-  // Null means "use the provider's default model" — see DEFAULT_MODEL_BY_PROVIDER.
+  // Null means "use the provider's default model" - see DEFAULT_MODEL_BY_PROVIDER.
   geminiModel: text("gemini_model"),
   openRouterModel: text("openrouter_model"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

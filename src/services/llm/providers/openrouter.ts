@@ -1,4 +1,8 @@
-import { LLMProviderError, type LLMProvider, type StructuredJsonRequest } from "@/services/llm/types";
+import {
+  LLMProviderError,
+  type LLMProvider,
+  type StructuredJsonRequest,
+} from "@/services/llm/types";
 import { logger, errorContext } from "@/lib/logger";
 import { OPENROUTER_MODEL } from "@/services/llm/defaultModels";
 
@@ -13,7 +17,7 @@ export class OpenRouterProvider implements LLMProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model: string = OPENROUTER_MODEL
+    private readonly model: string = OPENROUTER_MODEL,
   ) {
     this.modelName = model;
   }
@@ -43,7 +47,7 @@ export class OpenRouterProvider implements LLMProvider {
             { role: "user", content: input },
           ],
           // Extraction/transcription tasks want deterministic, on-task
-          // output — a high default temperature is what lets weaker
+          // output - a high default temperature is what lets weaker
           // (especially free-tier) models drift into repetitive filler
           // text instead of following the schema.
           temperature: 0.1,
@@ -59,17 +63,23 @@ export class OpenRouterProvider implements LLMProvider {
         }),
       });
     } catch (error) {
-      log.error("LLM call failed", { ...errorContext(error), durationMs: Date.now() - startedAt });
+      log.error("LLM call failed", {
+        ...errorContext(error),
+        durationMs: Date.now() - startedAt,
+      });
       throw new LLMProviderError(
-        error instanceof Error ? error.message : "Failed to reach OpenRouter."
+        error instanceof Error ? error.message : "Failed to reach OpenRouter.",
       );
     }
 
     if (!response.ok) {
       const body = await response.text().catch(() => "");
-      log.error("LLM call failed", { status: response.status, durationMs: Date.now() - startedAt });
+      log.error("LLM call failed", {
+        status: response.status,
+        durationMs: Date.now() - startedAt,
+      });
       throw new LLMProviderError(
-        `OpenRouter request failed (${response.status}): ${body.slice(0, 300) || response.statusText}`
+        `OpenRouter request failed (${response.status}): ${body.slice(0, 300) || response.statusText}`,
       );
     }
 
@@ -77,7 +87,9 @@ export class OpenRouterProvider implements LLMProvider {
     const outputText = data.choices?.[0]?.message?.content ?? undefined;
 
     if (!outputText) {
-      log.error("LLM call returned no output", { durationMs: Date.now() - startedAt });
+      log.error("LLM call returned no output", {
+        durationMs: Date.now() - startedAt,
+      });
       throw new LLMProviderError("The model did not return a text response.");
     }
 

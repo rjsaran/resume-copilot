@@ -1,7 +1,7 @@
 /*
  * Print-quality layout for the resume renderer. Only pages that render
  * <Resume /> pull this file in (Next.js code-splits CSS per route), so
- * these rules — including the @page at-rule — never leak into the rest of
+ * these rules - including the @page at-rule - never leak into the rest of
  * the app.
  *
  * @page governs the actual paper size/margins used both by a manual

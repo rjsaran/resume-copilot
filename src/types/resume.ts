@@ -49,7 +49,7 @@ export interface EducationEntry {
 
 /**
  * The canonical resume schema. This is the ONLY shape that ever flows
- * between the parser, Gemini, storage, and the renderer — nothing in this
+ * between the parser, Gemini, storage, and the renderer - nothing in this
  * pipeline generates or consumes Markdown or HTML except the renderer,
  * which turns this JSON into HTML for preview/PDF.
  */
@@ -61,11 +61,14 @@ export interface ResumeData {
   education: EducationEntry[];
 }
 
-const STRING_ARRAY_SCHEMA = { type: "array", items: { type: "string" } } as const;
+const STRING_ARRAY_SCHEMA = {
+  type: "array",
+  items: { type: "string" },
+} as const;
 
 /**
  * JSON Schema for structured Gemini output (response_format.schema).
- * Mirrors ResumeData exactly — keep the two in sync by hand, since Gemini's
+ * Mirrors ResumeData exactly - keep the two in sync by hand, since Gemini's
  * structured output can't be derived automatically from a TS type.
  */
 export const RESUME_JSON_SCHEMA = {
@@ -147,8 +150,13 @@ export const RESUME_JSON_SCHEMA = {
   required: ["basics", "experience", "projects", "skills", "education"],
 } as const;
 
-function isStringArrayOrUndefined(value: unknown): value is string[] | undefined {
-  return value === undefined || (Array.isArray(value) && value.every((v) => typeof v === "string"));
+function isStringArrayOrUndefined(
+  value: unknown,
+): value is string[] | undefined {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.every((v) => typeof v === "string"))
+  );
 }
 
 function isExperienceEntry(value: unknown): value is ExperienceEntry {

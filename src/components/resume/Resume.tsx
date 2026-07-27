@@ -1,6 +1,9 @@
 import "@/components/resume/resume-print.css";
 import { resumeFont } from "@/components/resume/fonts";
-import { resolveResumeTheme, type ResumeThemeId } from "@/components/resume/themes";
+import {
+  resolveResumeTheme,
+  type ResumeThemeId,
+} from "@/components/resume/themes";
 import { Header } from "@/components/resume/sections/Header";
 import { Summary } from "@/components/resume/sections/Summary";
 import { Experience } from "@/components/resume/sections/Experience";
@@ -13,7 +16,7 @@ import type { ResumeData } from "@/types/resume";
 
 /**
  * The rendering engine's single entry point. Every section receives plain
- * ResumeData — no Markdown parsing anywhere in this tree. Swapping `theme`
+ * ResumeData - no Markdown parsing anywhere in this tree. Swapping `theme`
  * changes the entire visual design without touching the data or the AI
  * pipeline that produced it.
  */

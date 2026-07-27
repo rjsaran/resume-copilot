@@ -5,12 +5,12 @@ import type { CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
  * prompt (see /api/analyze). This is the "lightweight" tier: one line per
  * experience/project entry (role, company, dates, tech, and the short
  * per-role summary if present) instead of full achievement bullets and
- * project descriptions — enough signal to judge fit (seniority, domain,
+ * project descriptions - enough signal to judge fit (seniority, domain,
  * tech stack) without paying for the full prose on every analysis.
  *
  * The full knowledge base (all achievements, all detail) is a separate,
  * heavier tier reserved for resume tailoring, which needs the complete
- * source material to select and reword from — see
+ * source material to select and reword from - see
  * services/resume/prompts/resumeTailorPrompt.ts, which sends the raw
  * CareerKnowledgeBase JSON directly.
  */
@@ -20,7 +20,9 @@ export function careerKnowledgeBaseToText(kb: CareerKnowledgeBase): string {
   lines.push(kb.personal.fullName);
   lines.push(kb.personal.headline);
   lines.push(
-    [kb.personal.email, kb.personal.phone, kb.personal.location].filter(Boolean).join(" | ")
+    [kb.personal.email, kb.personal.phone, kb.personal.location]
+      .filter(Boolean)
+      .join(" | "),
   );
   lines.push("");
 
@@ -34,9 +36,12 @@ export function careerKnowledgeBaseToText(kb: CareerKnowledgeBase): string {
     lines.push("EXPERIENCE");
     for (const entry of kb.experience) {
       const dates = `${entry.startDate} - ${entry.endDate ?? "Present"}`;
-      const tech = entry.technologies && entry.technologies.length > 0 ? entry.technologies.join(", ") : "";
+      const tech =
+        entry.technologies && entry.technologies.length > 0
+          ? entry.technologies.join(", ")
+          : "";
       lines.push(
-        `${entry.role} @ ${entry.company} (${dates})${tech ? ` — ${tech}` : ""}`
+        `${entry.role} @ ${entry.company} (${dates})${tech ? ` - ${tech}` : ""}`,
       );
       if (entry.summary) lines.push(entry.summary);
     }
@@ -46,8 +51,13 @@ export function careerKnowledgeBaseToText(kb: CareerKnowledgeBase): string {
   if (kb.projects.length > 0) {
     lines.push("PROJECTS");
     for (const project of kb.projects) {
-      const tech = project.technologies && project.technologies.length > 0 ? project.technologies.join(", ") : "";
-      lines.push(`${project.name} (${project.type})${tech ? ` — ${tech}` : ""}`);
+      const tech =
+        project.technologies && project.technologies.length > 0
+          ? project.technologies.join(", ")
+          : "";
+      lines.push(
+        `${project.name} (${project.type})${tech ? ` - ${tech}` : ""}`,
+      );
     }
     lines.push("");
   }
@@ -64,7 +74,9 @@ export function careerKnowledgeBaseToText(kb: CareerKnowledgeBase): string {
     lines.push("EDUCATION");
     for (const entry of kb.education) {
       const meta = [entry.startDate, entry.endDate].filter(Boolean).join(" - ");
-      lines.push(`${entry.degree} — ${entry.institution}${meta ? ` (${meta})` : ""}`);
+      lines.push(
+        `${entry.degree} - ${entry.institution}${meta ? ` (${meta})` : ""}`,
+      );
     }
     lines.push("");
   }

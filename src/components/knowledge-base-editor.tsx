@@ -3,8 +3,17 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { isCareerKnowledgeBase, type CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  isCareerKnowledgeBase,
+  type CareerKnowledgeBase,
+} from "@/types/careerKnowledgeBase";
 import { saveKnowledgeBaseAction } from "@/app/knowledge-base/actions";
 
 interface KnowledgeBaseEditorProps {
@@ -25,7 +34,7 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
     try {
       parsed = JSON.parse(text);
     } catch {
-      setError("That isn't valid JSON — fix the syntax error and try again.");
+      setError("That isn't valid JSON - fix the syntax error and try again.");
       return;
     }
 
@@ -35,7 +44,9 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
     }
 
     startSaving(async () => {
-      const result = await saveKnowledgeBaseAction(parsed as CareerKnowledgeBase);
+      const result = await saveKnowledgeBaseAction(
+        parsed as CareerKnowledgeBase,
+      );
       if (result.success) {
         setSaved(true);
       } else {
@@ -49,9 +60,16 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
           <CardTitle>Edit as JSON</CardTitle>
-          <CardDescription>Edit the structured data directly, then save.</CardDescription>
+          <CardDescription>
+            Edit the structured data directly, then save.
+          </CardDescription>
         </div>
-        <Button size="sm" onClick={handleSave} disabled={isSaving} className="shrink-0">
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="shrink-0"
+        >
           {isSaving ? "Saving…" : "Save"}
         </Button>
       </CardHeader>

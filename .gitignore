@@ -45,6 +45,6 @@ next-env.d.ts
 /prisma/*.db
 /prisma/*.db-journal
 
-# personal career data (real PII) — no longer read by the app at runtime
+# personal career data (real PII) - no longer read by the app at runtime
 # (knowledge base is per-user in the DB), kept locally only for reference
 /resume/

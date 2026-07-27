@@ -2,7 +2,7 @@ import type { ResumeTheme } from "./types";
 
 /**
  * Classic: a minimal, black-on-white, ATS-friendly layout modeled on a
- * traditional professional resume — bold name, bordered uppercase section
+ * traditional professional resume - bold name, bordered uppercase section
  * titles, plain bullet lists. No color beyond black/neutral grays.
  */
 export const classicTheme: ResumeTheme = {
@@ -37,7 +37,8 @@ export const classicTheme: ResumeTheme = {
     },
     projects: {
       wrapper: "resume-avoid-break mb-2.5",
-      heading: "flex flex-wrap items-baseline justify-between gap-x-2 text-[11.5px] font-semibold",
+      heading:
+        "flex flex-wrap items-baseline justify-between gap-x-2 text-[11.5px] font-semibold",
       meta: "text-[10px] italic text-neutral-600",
       bullets: "mt-1 list-disc space-y-0.5 pl-4",
       bulletItem: "text-[11px] leading-snug text-neutral-800",
@@ -51,7 +52,8 @@ export const classicTheme: ResumeTheme = {
     },
     education: {
       wrapper: "resume-avoid-break mb-2",
-      heading: "flex flex-wrap items-baseline justify-between gap-x-2 text-[11.5px] font-semibold",
+      heading:
+        "flex flex-wrap items-baseline justify-between gap-x-2 text-[11.5px] font-semibold",
       meta: "text-[10px] italic text-neutral-600",
       notes: "mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-neutral-800",
     },

@@ -47,9 +47,12 @@ async function launchBrowser(): Promise<Browser> {
  * a headless Chromium instance. `preferCSSPageSize` makes Chromium honor
  * the page's own `@page` CSS (size + margins) instead of Playwright's JS
  * options, which is what guarantees the exported PDF matches the on-screen
- * preview exactly — both are governed by the same stylesheet.
+ * preview exactly - both are governed by the same stylesheet.
  */
-export async function generateResumePdf(url: string, cookies: PdfCookie[] = []): Promise<Buffer> {
+export async function generateResumePdf(
+  url: string,
+  cookies: PdfCookie[] = [],
+): Promise<Buffer> {
   let browser: Browser;
   try {
     browser = await launchBrowser();
@@ -58,7 +61,7 @@ export async function generateResumePdf(url: string, cookies: PdfCookie[] = []):
     throw new ResumePdfError(
       error instanceof Error
         ? `Failed to launch the PDF renderer: ${error.message}`
-        : "Failed to launch the PDF renderer."
+        : "Failed to launch the PDF renderer.",
     );
   }
 
@@ -72,14 +75,16 @@ export async function generateResumePdf(url: string, cookies: PdfCookie[] = []):
     const response = await page.goto(url, { waitUntil: "networkidle" });
 
     if (!response || !response.ok()) {
-      log.error("Preview page failed to load", { status: response?.status() ?? null });
+      log.error("Preview page failed to load", {
+        status: response?.status() ?? null,
+      });
       throw new ResumePdfError(
-        `Could not load the resume preview (status ${response?.status() ?? "unknown"}).`
+        `Could not load the resume preview (status ${response?.status() ?? "unknown"}).`,
       );
     }
 
     // Ensure the self-hosted resume font has finished loading before we
-    // snapshot the page — otherwise a fallback font can get baked into the PDF.
+    // snapshot the page - otherwise a fallback font can get baked into the PDF.
     await page.evaluate(() => document.fonts.ready);
 
     const pdfBuffer = await page.pdf({

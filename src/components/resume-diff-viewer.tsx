@@ -14,7 +14,7 @@ interface DiffRow {
 function splitDiffValueIntoLines(value: string): string[] {
   const lines = value.split("\n");
   // A diff chunk that ends in "\n" produces one trailing empty string from
-  // split() — drop it so we don't render a phantom blank row.
+  // split() - drop it so we don't render a phantom blank row.
   if (lines[lines.length - 1] === "") {
     lines.pop();
   }
@@ -23,7 +23,7 @@ function splitDiffValueIntoLines(value: string): string[] {
 
 function buildDiffColumns(
   before: string,
-  after: string
+  after: string,
 ): { left: DiffRow[]; right: DiffRow[] } {
   const parts = diffLines(before, after);
   const left: DiffRow[] = [];
@@ -69,7 +69,7 @@ function DiffColumn({ title, rows }: { title: string; rows: DiffRow[] }) {
                 "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
               row.type === "removed" &&
                 "bg-red-500/15 text-red-800 dark:text-red-400",
-              row.type === "empty" && "bg-muted/40"
+              row.type === "empty" && "bg-muted/40",
             )}
           >
             {row.text || " "}
@@ -93,7 +93,7 @@ export function ResumeDiffViewer({
 }) {
   const { left, right } = useMemo(
     () => buildDiffColumns(before, after),
-    [before, after]
+    [before, after],
   );
 
   return (

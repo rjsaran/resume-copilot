@@ -14,10 +14,10 @@ const CONFIDENCE_LABEL: Record<JobAnalysis["interviewConfidence"], string> = {
 };
 
 /**
- * The first thing on the page — answers "should I apply?" before anything
+ * The first thing on the page - answers "should I apply?" before anything
  * else. ctaHref is computed by the caller: an anchor to the tailoring panel
  * on the application detail page, or a link to it from the standalone
- * analyze page — this card never triggers generation itself, so there's
+ * analyze page - this card never triggers generation itself, so there's
  * only one place (TailoredResumePanel) that owns that state machine.
  */
 export function HeroRecommendationCard({
@@ -38,7 +38,7 @@ export function HeroRecommendationCard({
             <div
               className={cn(
                 "flex size-11 shrink-0 items-center justify-center rounded-full",
-                meta.iconWrapClassName
+                meta.iconWrapClassName,
               )}
             >
               <Icon className={cn("size-6", meta.iconClassName)} />
@@ -57,7 +57,9 @@ export function HeroRecommendationCard({
           </Badge>
         </div>
 
-        <p className="text-base leading-relaxed text-foreground/90">{analysis.summary}</p>
+        <p className="text-base leading-relaxed text-foreground/90">
+          {analysis.summary}
+        </p>
 
         {analysis.hardBlockers.length > 0 && (
           <div className="flex items-start gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-400">
@@ -66,7 +68,12 @@ export function HeroRecommendationCard({
           </div>
         )}
 
-        <Button size="lg" className="w-fit" nativeButton={false} render={<Link href={ctaHref} />}>
+        <Button
+          size="lg"
+          className="w-fit"
+          nativeButton={false}
+          render={<Link href={ctaHref} />}
+        >
           Generate Tailored Resume
           <ArrowRight className="size-4" />
         </Button>

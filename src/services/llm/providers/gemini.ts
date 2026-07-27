@@ -1,5 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
-import { LLMProviderError, type LLMProvider, type StructuredJsonRequest } from "@/services/llm/types";
+import {
+  LLMProviderError,
+  type LLMProvider,
+  type StructuredJsonRequest,
+} from "@/services/llm/types";
 import { logger, errorContext } from "@/lib/logger";
 import { GEMINI_MODEL } from "@/services/llm/defaultModels";
 
@@ -8,7 +12,7 @@ export class GeminiProvider implements LLMProvider {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model: string = GEMINI_MODEL
+    private readonly model: string = GEMINI_MODEL,
   ) {
     this.modelName = model;
   }
@@ -31,7 +35,7 @@ export class GeminiProvider implements LLMProvider {
         system_instruction: systemInstruction,
         input,
         // Extraction/transcription tasks want deterministic, on-task
-        // output — the default temperature (~1.0) is what lets the model
+        // output - the default temperature (~1.0) is what lets the model
         // drift into repetitive filler text instead of finishing the
         // extraction faithfully.
         generation_config: { temperature: 0.1 },
@@ -43,14 +47,19 @@ export class GeminiProvider implements LLMProvider {
       });
       outputText = interaction.output_text;
     } catch (error) {
-      log.error("LLM call failed", { ...errorContext(error), durationMs: Date.now() - startedAt });
+      log.error("LLM call failed", {
+        ...errorContext(error),
+        durationMs: Date.now() - startedAt,
+      });
       throw new LLMProviderError(
-        error instanceof Error ? error.message : "Failed to reach Gemini."
+        error instanceof Error ? error.message : "Failed to reach Gemini.",
       );
     }
 
     if (!outputText) {
-      log.error("LLM call returned no output", { durationMs: Date.now() - startedAt });
+      log.error("LLM call returned no output", {
+        durationMs: Date.now() - startedAt,
+      });
       throw new LLMProviderError("The model did not return a text response.");
     }
 

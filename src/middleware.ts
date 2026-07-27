@@ -5,7 +5,9 @@ import { logger } from "@/lib/logger";
 const PUBLIC_PATHS = ["/sign-in", "/auth/callback"];
 
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  return PUBLIC_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
 }
 
 export async function middleware(request: NextRequest) {
@@ -29,10 +31,10 @@ export async function middleware(request: NextRequest) {
           }
         },
       },
-    }
+    },
   );
 
-  // Refreshes the session cookie if it's expired — must be called before
+  // Refreshes the session cookie if it's expired - must be called before
   // any route logic runs, and the result must not be discarded (per
   // @supabase/ssr's Next.js middleware guidance).
   const {
@@ -49,7 +51,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && request.nextUrl.pathname === "/sign-in") {
-    logger.debug("Redirecting signed-in user away from sign-in", { userId: user.id });
+    logger.debug("Redirecting signed-in user away from sign-in", {
+      userId: user.id,
+    });
     return NextResponse.redirect(new URL("/applications", request.url));
   }
 
@@ -60,7 +64,7 @@ export const config = {
   matcher: [
     /*
      * Match all page request paths except API routes (each API route checks
-     * auth itself and returns 401 JSON — a redirect response would break
+     * auth itself and returns 401 JSON - a redirect response would break
      * fetch() callers expecting JSON), static assets, and Next.js internals.
      */
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",

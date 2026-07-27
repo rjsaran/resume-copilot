@@ -24,7 +24,9 @@ function Step({ label, done, href }: StepProps) {
       ) : (
         <Circle className="size-4 shrink-0 text-muted-foreground" />
       )}
-      <span className={cn(done && "text-muted-foreground line-through")}>{label}</span>
+      <span className={cn(done && "text-muted-foreground line-through")}>
+        {label}
+      </span>
     </div>
   );
 
@@ -40,7 +42,7 @@ function Step({ label, done, href }: StepProps) {
 
 /**
  * Only shows steps derived from real, verifiable state (a tailored resume
- * version exists, the application status has moved past "Analyzed") —
+ * version exists, the application status has moved past "Analyzed") -
  * deliberately not fabricating progress tracking for things the app has no
  * way to actually know (e.g. whether a PDF was reviewed).
  */
@@ -57,8 +59,16 @@ export function NextStepsChecklist({
         <CardTitle>Recommended Next Steps</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <Step label="Generate a tailored resume" done={hasTailoredVersion} href={tailoredResumeHref} />
-        <Step label="Export as PDF" done={false} href={hasTailoredVersion ? tailoredResumeHref : undefined} />
+        <Step
+          label="Generate a tailored resume"
+          done={hasTailoredVersion}
+          href={tailoredResumeHref}
+        />
+        <Step
+          label="Export as PDF"
+          done={false}
+          href={hasTailoredVersion ? tailoredResumeHref : undefined}
+        />
         <Step label="Mark as applied" done={applied} />
       </CardContent>
     </Card>

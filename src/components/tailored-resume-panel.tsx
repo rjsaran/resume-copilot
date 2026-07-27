@@ -149,7 +149,7 @@ export function TailoredResumePanel({
       });
 
       // Don't yank the user away from an in-progress, unsaved edit of a
-      // different version just because a background generation finished —
+      // different version just because a background generation finished -
       // that would silently discard their draft. The new version is still
       // added above; they can switch to it from the selector.
       if (hasUnsavedChanges) return;
@@ -265,7 +265,7 @@ export function TailoredResumePanel({
         {!masterVersion || !selectedVersion || !activeResume ? (
           <p className="text-sm text-muted-foreground">
             {isGenerating
-              ? "Tailoring your resume to this job — this can take a little while..."
+              ? "Tailoring your resume to this job - this can take a little while..."
               : "No tailored resume yet. Click “Generate Resume” to create one from your master resume, this job's description, and its analysis."}
           </p>
         ) : (

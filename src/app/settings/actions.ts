@@ -18,7 +18,9 @@ export interface SettingsActionResult {
   error?: string;
 }
 
-export async function saveGeminiKeyAction(apiKey: string): Promise<SettingsActionResult> {
+export async function saveGeminiKeyAction(
+  apiKey: string,
+): Promise<SettingsActionResult> {
   const user = await requireUser();
   const log = logger.child({ action: "saveGeminiKeyAction", userId: user.id });
   const trimmed = apiKey.trim();
@@ -28,7 +30,7 @@ export async function saveGeminiKeyAction(apiKey: string): Promise<SettingsActio
     return { success: false, error: "API key cannot be empty." };
   }
 
-  // Never log the key itself, encrypted or not — only that one was saved.
+  // Never log the key itself, encrypted or not - only that one was saved.
   await upsertProviderKey(user.id, "GEMINI", encryptSecret(trimmed));
   log.info("Gemini API key saved");
   revalidatePath("/settings");
@@ -38,7 +40,10 @@ export async function saveGeminiKeyAction(apiKey: string): Promise<SettingsActio
 
 export async function removeGeminiKeyAction(): Promise<SettingsActionResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "removeGeminiKeyAction", userId: user.id });
+  const log = logger.child({
+    action: "removeGeminiKeyAction",
+    userId: user.id,
+  });
 
   await clearProviderKey(user.id, "GEMINI");
   log.info("Gemini API key removed");
@@ -47,9 +52,14 @@ export async function removeGeminiKeyAction(): Promise<SettingsActionResult> {
   return { success: true };
 }
 
-export async function saveOpenRouterKeyAction(apiKey: string): Promise<SettingsActionResult> {
+export async function saveOpenRouterKeyAction(
+  apiKey: string,
+): Promise<SettingsActionResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "saveOpenRouterKeyAction", userId: user.id });
+  const log = logger.child({
+    action: "saveOpenRouterKeyAction",
+    userId: user.id,
+  });
   const trimmed = apiKey.trim();
 
   if (!trimmed) {
@@ -57,7 +67,7 @@ export async function saveOpenRouterKeyAction(apiKey: string): Promise<SettingsA
     return { success: false, error: "API key cannot be empty." };
   }
 
-  // Never log the key itself, encrypted or not — only that one was saved.
+  // Never log the key itself, encrypted or not - only that one was saved.
   await upsertProviderKey(user.id, "OPENROUTER", encryptSecret(trimmed));
   log.info("OpenRouter API key saved");
   revalidatePath("/settings");
@@ -67,7 +77,10 @@ export async function saveOpenRouterKeyAction(apiKey: string): Promise<SettingsA
 
 export async function removeOpenRouterKeyAction(): Promise<SettingsActionResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "removeOpenRouterKeyAction", userId: user.id });
+  const log = logger.child({
+    action: "removeOpenRouterKeyAction",
+    userId: user.id,
+  });
 
   await clearProviderKey(user.id, "OPENROUTER");
   log.info("OpenRouter API key removed");
@@ -78,10 +91,13 @@ export async function removeOpenRouterKeyAction(): Promise<SettingsActionResult>
 
 export async function setProviderModelAction(
   provider: LlmProvider,
-  model: string
+  model: string,
 ): Promise<SettingsActionResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "setProviderModelAction", userId: user.id });
+  const log = logger.child({
+    action: "setProviderModelAction",
+    userId: user.id,
+  });
 
   if (!IMPLEMENTED_PROVIDERS.includes(provider)) {
     log.warn("Model override blocked: provider not implemented", { provider });
@@ -96,9 +112,14 @@ export async function setProviderModelAction(
   return { success: true };
 }
 
-export async function setActiveProviderAction(provider: LlmProvider): Promise<SettingsActionResult> {
+export async function setActiveProviderAction(
+  provider: LlmProvider,
+): Promise<SettingsActionResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "setActiveProviderAction", userId: user.id });
+  const log = logger.child({
+    action: "setActiveProviderAction",
+    userId: user.id,
+  });
 
   if (!IMPLEMENTED_PROVIDERS.includes(provider)) {
     log.warn("Active provider switch blocked: not implemented", { provider });

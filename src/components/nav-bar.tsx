@@ -34,7 +34,7 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
 
   // The resume preview route is opened in its own tab as a clean,
   // print-ready document (it's also the exact URL Playwright captures for
-  // PDF export) — it should never show app chrome, on screen or on paper.
+  // PDF export) - it should never show app chrome, on screen or on paper.
   if (pathname.includes("/resume/") && pathname.endsWith("/preview")) {
     return null;
   }
@@ -56,7 +56,9 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
         <nav className="flex items-center gap-1">
           {NAV_ITEMS.map((item) => {
             const isActive =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              item.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
               <Link
@@ -66,7 +68,7 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
                   "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <Icon className="size-3.5" />
@@ -78,11 +80,15 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
             <DropdownMenu>
               <DropdownMenuTrigger className="ml-2 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
                 <Avatar>
-                  <AvatarFallback>{initialsFromEmail(userEmail)}</AvatarFallback>
+                  <AvatarFallback>
+                    {initialsFromEmail(userEmail)}
+                  </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuLabel className="truncate">{userEmail}</DropdownMenuLabel>
+                <DropdownMenuLabel className="truncate">
+                  {userEmail}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuLinkItem render={<Link href="/knowledge-base" />}>
                   <BookUser />

@@ -17,12 +17,12 @@ export class KnowledgeBaseImportError extends Error {}
 /**
  * Calls the user's configured LLM provider to transcribe text extracted
  * from a resume PDF into a CareerKnowledgeBase JSON draft. Never persists
- * anything — the caller is expected to let the user review/edit the result
+ * anything - the caller is expected to let the user review/edit the result
  * before saving it (see knowledge-base-workspace.tsx).
  */
 export async function importKnowledgeBaseFromText(
   input: ImportKnowledgeBaseInput,
-  provider: LLMProvider
+  provider: LLMProvider,
 ): Promise<CareerKnowledgeBase> {
   const prompt = buildKnowledgeBaseImportPrompt(input);
 
@@ -35,7 +35,9 @@ export async function importKnowledgeBaseFromText(
     });
   } catch (error) {
     throw new KnowledgeBaseImportError(
-      error instanceof LLMProviderError ? error.message : "Failed to import the knowledge base."
+      error instanceof LLMProviderError
+        ? error.message
+        : "Failed to import the knowledge base.",
     );
   }
 
@@ -50,11 +52,14 @@ export async function importKnowledgeBaseFromText(
   }
 
   if (!isCareerKnowledgeBase(parsed)) {
-    logger.warn("Knowledge base import: model JSON did not match expected schema", {
-      module: "knowledgeBaseImporter",
-    });
+    logger.warn(
+      "Knowledge base import: model JSON did not match expected schema",
+      {
+        module: "knowledgeBaseImporter",
+      },
+    );
     throw new KnowledgeBaseImportError(
-      "The model's JSON did not match the expected knowledge base schema."
+      "The model's JSON did not match the expected knowledge base schema.",
     );
   }
 

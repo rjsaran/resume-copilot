@@ -15,8 +15,14 @@ import {
   getResumeVersion,
   updateResumeVersion,
 } from "@/lib/repositories/resumeRepository";
-import { generateTailoredResume, ResumeTailorError } from "@/services/resume/resumeTailor";
-import { requireKnowledgeBase, KnowledgeBaseError } from "@/lib/repositories/knowledgeBaseRepository";
+import {
+  generateTailoredResume,
+  ResumeTailorError,
+} from "@/services/resume/resumeTailor";
+import {
+  requireKnowledgeBase,
+  KnowledgeBaseError,
+} from "@/lib/repositories/knowledgeBaseRepository";
 import { careerKnowledgeBaseToResumeData } from "@/lib/resume/knowledgeBaseToResumeData";
 import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
@@ -27,10 +33,14 @@ import { logger, errorContext } from "@/lib/logger";
 
 export async function updateApplicationStatusAction(
   applicationId: string,
-  status: ApplicationStatus
+  status: ApplicationStatus,
 ) {
   const user = await requireUser();
-  const log = logger.child({ action: "updateApplicationStatusAction", userId: user.id, applicationId });
+  const log = logger.child({
+    action: "updateApplicationStatusAction",
+    userId: user.id,
+    applicationId,
+  });
 
   const application = await getApplication(applicationId, user.id);
   if (!application) {
@@ -45,7 +55,10 @@ export async function updateApplicationStatusAction(
       stage: STATUS_LABELS[status],
       notes: `Status changed from ${STATUS_LABELS[application.status]} to ${STATUS_LABELS[status]}.`,
     });
-    log.info("Application status changed", { from: application.status, to: status });
+    log.info("Application status changed", {
+      from: application.status,
+      to: status,
+    });
   }
 
   revalidatePath(`/applications/${applicationId}`);
@@ -66,17 +79,21 @@ export interface GenerateTailoredResumeResult {
  *     + Job Description + Analysis JSON
  *   -> user's LLM provider selects & rewords a subset -> tailored_resume.json -> new ResumeVersion row
  *
- * The model only ever sees/produces ResumeData JSON — never Markdown or
+ * The model only ever sees/produces ResumeData JSON - never Markdown or
  * HTML. Always creates a new version; never overwrites a previous one.
- * Each regeneration is independent — no prior tailored versions are sent
+ * Each regeneration is independent - no prior tailored versions are sent
  * back to the model, which keeps token cost flat regardless of how many
  * times a resume has been regenerated for this application.
  */
 export async function generateTailoredResumeAction(
-  applicationId: string
+  applicationId: string,
 ): Promise<GenerateTailoredResumeResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "generateTailoredResumeAction", userId: user.id, applicationId });
+  const log = logger.child({
+    action: "generateTailoredResumeAction",
+    userId: user.id,
+    applicationId,
+  });
   const startedAt = Date.now();
 
   const application = await getApplication(applicationId, user.id);
@@ -100,7 +117,9 @@ export async function generateTailoredResumeAction(
   }
 
   if (!isJobAnalysis(analysisData)) {
-    log.error("Tailoring blocked: stored analysis JSON did not match expected shape");
+    log.error(
+      "Tailoring blocked: stored analysis JSON did not match expected shape",
+    );
     return {
       success: false,
       error: "Stored analysis JSON did not match the expected shape.",
@@ -125,17 +144,26 @@ export async function generateTailoredResumeAction(
   try {
     provider = await getUserLlmProvider(user.id);
   } catch (error) {
-    log.warn("Tailoring blocked: no LLM provider configured", errorContext(error));
+    log.warn(
+      "Tailoring blocked: no LLM provider configured",
+      errorContext(error),
+    );
     return {
       success: false,
-      error: error instanceof LLMProviderError ? error.message : "No LLM provider configured.",
+      error:
+        error instanceof LLMProviderError
+          ? error.message
+          : "No LLM provider configured.",
     };
   }
 
   // A full, untailored projection of the knowledge base is snapshotted once
-  // per application as a MASTER version, purely for reference/diffing — the
+  // per application as a MASTER version, purely for reference/diffing - the
   // knowledge base itself (not this snapshot) is what tailoring reads from.
-  let masterVersion = await getLatestResumeVersionByType(applicationId, "MASTER");
+  let masterVersion = await getLatestResumeVersionByType(
+    applicationId,
+    "MASTER",
+  );
   if (!masterVersion) {
     masterVersion = await createResumeVersion({
       applicationId,
@@ -153,10 +181,13 @@ export async function generateTailoredResumeAction(
         jobDescription: application.analysis.jdMarkdown,
         analysis: analysisData,
       },
-      provider
+      provider,
     );
   } catch (error) {
-    log.error("Tailored resume generation failed", { ...errorContext(error), durationMs: Date.now() - startedAt });
+    log.error("Tailored resume generation failed", {
+      ...errorContext(error),
+      durationMs: Date.now() - startedAt,
+    });
     return {
       success: false,
       error:
@@ -166,7 +197,10 @@ export async function generateTailoredResumeAction(
     };
   }
 
-  const tailoredCount = await countResumeVersionsByType(applicationId, "TAILORED");
+  const tailoredCount = await countResumeVersionsByType(
+    applicationId,
+    "TAILORED",
+  );
   const resumeVersion = await createResumeVersion({
     applicationId,
     name: `Tailored v${tailoredCount + 1}`,
@@ -198,20 +232,32 @@ export interface UpdateResumeVersionResult {
 export async function updateResumeVersionAction(
   applicationId: string,
   versionId: string,
-  resume: ResumeData
+  resume: ResumeData,
 ): Promise<UpdateResumeVersionResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "updateResumeVersionAction", userId: user.id, applicationId, versionId });
+  const log = logger.child({
+    action: "updateResumeVersionAction",
+    userId: user.id,
+    applicationId,
+    versionId,
+  });
 
   const existing = await getResumeVersion(versionId);
   if (!existing || existing.application.userId !== user.id) {
-    log.warn("Resume version edit blocked: version not found or not owned by user");
+    log.warn(
+      "Resume version edit blocked: version not found or not owned by user",
+    );
     return { success: false, error: "Resume version not found." };
   }
 
   if (!isResumeData(resume)) {
-    log.warn("Resume version edit blocked: payload did not match expected shape");
-    return { success: false, error: "Resume data did not match the expected shape." };
+    log.warn(
+      "Resume version edit blocked: payload did not match expected shape",
+    );
+    return {
+      success: false,
+      error: "Resume data did not match the expected shape.",
+    };
   }
 
   const resumeVersion = await updateResumeVersion({ id: versionId, resume });

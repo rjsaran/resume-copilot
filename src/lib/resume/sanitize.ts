@@ -9,7 +9,7 @@ const MAX_GPA_LENGTH = 16;
  * (observed: reasoning-like text bleeding into `endDate`). Date/GPA fields
  * are inherently short by nature, so clamp them defensively rather than
  * rendering paragraphs of garbage on the resume. This does not fix the
- * model's occasional corruption — it only prevents it from reaching the UI.
+ * model's occasional corruption - it only prevents it from reaching the UI.
  */
 export function sanitizeResumeData(resume: ResumeData): ResumeData {
   const clamp = (value: string | undefined, max: number) =>

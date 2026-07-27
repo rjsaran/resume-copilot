@@ -1,7 +1,9 @@
 import { HeroRecommendationCard } from "@/components/job-analysis/HeroRecommendationCard";
 import { MatchScoreExplainer } from "@/components/job-analysis/MatchScoreExplainer";
 import { StrengthsAndRisks } from "@/components/job-analysis/StrengthsAndRisks";
+import { RequirementCoverage } from "@/components/job-analysis/RequirementCoverage";
 import { GapCardList } from "@/components/job-analysis/GapCardList";
+import { QuickWins } from "@/components/job-analysis/QuickWins";
 import { RecruiterReviewCard } from "@/components/job-analysis/RecruiterReviewCard";
 import { NextStepsChecklist } from "@/components/job-analysis/NextStepsChecklist";
 import { SecondaryDetails } from "@/components/job-analysis/SecondaryDetails";
@@ -10,7 +12,7 @@ import type { ApplicationStatus } from "@/lib/db/schema";
 
 interface JobAnalysisDashboardProps {
   analysis: JobAnalysis;
-  /** Where the hero CTA and "Generate a tailored resume" step should send the user — an anchor on this page, or a link to the application detail page if this is the standalone analyze page. */
+  /** Where the hero CTA and "Generate a tailored resume" step should send the user - an anchor on this page, or a link to the application detail page if this is the standalone analyze page. */
   tailoredResumeHref: string;
   hasTailoredVersion: boolean;
   applicationStatus: ApplicationStatus;
@@ -18,7 +20,7 @@ interface JobAnalysisDashboardProps {
 
 /**
  * Answers, in order: should I apply? why? what are my strengths? what are
- * my biggest risks? what should I do next? — a decision flow, not a flat
+ * my biggest risks? what should I do next? - a decision flow, not a flat
  * grid of independent metric cards.
  */
 export function JobAnalysisDashboard({
@@ -29,11 +31,18 @@ export function JobAnalysisDashboard({
 }: JobAnalysisDashboardProps) {
   return (
     <div className="flex flex-col gap-5">
-      <HeroRecommendationCard analysis={analysis} ctaHref={tailoredResumeHref} />
+      <HeroRecommendationCard
+        analysis={analysis}
+        ctaHref={tailoredResumeHref}
+      />
       <MatchScoreExplainer analysis={analysis} />
       <StrengthsAndRisks analysis={analysis} />
+      <RequirementCoverage coverage={analysis.coverage} />
       <GapCardList gaps={analysis.gaps} />
-      <RecruiterReviewCard recruiterFirstImpression={analysis.recruiterFirstImpression} />
+      <QuickWins quickWins={analysis.quickWins} />
+      <RecruiterReviewCard
+        recruiterFirstImpression={analysis.recruiterFirstImpression}
+      />
       <NextStepsChecklist
         tailoredResumeHref={tailoredResumeHref}
         hasTailoredVersion={hasTailoredVersion}

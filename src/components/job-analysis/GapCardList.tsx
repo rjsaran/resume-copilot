@@ -39,6 +39,10 @@ function GapCard({ gap }: { gap: Gap }) {
               <p className="font-medium text-muted-foreground">Why it matters</p>
               <p>{gap.whyItMatters}</p>
             </div>
+            <div>
+              <p className="font-medium text-muted-foreground">Why we flagged this</p>
+              <p>{gap.reason}</p>
+            </div>
             <div className="flex items-start gap-2">
               {gap.aiCanFix ? (
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />

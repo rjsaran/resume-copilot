@@ -1,7 +1,12 @@
 import { createHash } from "crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { analyses, applications, outcomes, resumeVersions } from "@/lib/db/schema";
+import {
+  analyses,
+  applications,
+  outcomes,
+  resumeVersions,
+} from "@/lib/db/schema";
 import type { Application, ApplicationStatus } from "@/lib/db/schema";
 import type { JobAnalysis } from "@/types/analysis";
 
@@ -21,13 +26,21 @@ export interface SaveAnalysisInput {
  * Persists an analysis result, scoped to one user. If this user already has
  * an Application for this job URL (matched by userId + jobHash), its
  * scores/verdict and Analysis row are updated in place rather than creating
- * a duplicate — two different users analyzing the same job posting each get
+ * a duplicate - two different users analyzing the same job posting each get
  * their own Application row.
  */
-export async function saveAnalysis(input: SaveAnalysisInput): Promise<Application> {
+export async function saveAnalysis(
+  input: SaveAnalysisInput,
+): Promise<Application> {
   const jobHash = hashJobUrl(input.jobUrl);
-  const { company, jobTitle, matchScore, atsScore, interviewConfidence, recommendationStatus } =
-    input.analysis;
+  const {
+    company,
+    jobTitle,
+    matchScore,
+    atsScore,
+    interviewConfidence,
+    recommendationStatus,
+  } = input.analysis;
   const analysisJson = JSON.stringify(input.analysis);
 
   return db.transaction(async (tx) => {
@@ -82,7 +95,10 @@ export async function saveAnalysis(input: SaveAnalysisInput): Promise<Applicatio
  */
 export function getApplicationByJobHash(userId: string, jobHash: string) {
   return db.query.applications.findFirst({
-    where: and(eq(applications.userId, userId), eq(applications.jobHash, jobHash)),
+    where: and(
+      eq(applications.userId, userId),
+      eq(applications.jobHash, jobHash),
+    ),
     with: { analysis: true },
   });
 }
@@ -108,7 +124,7 @@ export function getApplication(id: string, userId: string) {
 export async function updateStatus(
   id: string,
   userId: string,
-  status: ApplicationStatus
+  status: ApplicationStatus,
 ): Promise<void> {
   await db
     .update(applications)

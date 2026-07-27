@@ -2,7 +2,7 @@ import type { ResumeTheme } from "./types";
 import { classicTheme } from "./classic";
 
 /**
- * Theme registry. Every theme consumes the exact same ResumeData JSON —
+ * Theme registry. Every theme consumes the exact same ResumeData JSON -
  * adding a new theme (Modern, Minimal, Executive, ...) means adding a new
  * entry here plus a `classes` object; no changes to the schema, the
  * section components, or the pipeline that produces ResumeData.

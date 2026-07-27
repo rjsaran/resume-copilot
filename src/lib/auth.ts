@@ -14,7 +14,7 @@ export async function getCurrentUser(): Promise<User | null> {
  * For Server Components/Actions that require a signed-in user. Middleware
  * already redirects unauthenticated page requests to /sign-in, so reaching
  * this with no user is the rare race (session just expired) rather than the
- * common case — still worth guarding explicitly rather than trusting the
+ * common case - still worth guarding explicitly rather than trusting the
  * middleware alone.
  */
 export async function requireUser(): Promise<User> {

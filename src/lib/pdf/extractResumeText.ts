@@ -11,7 +11,9 @@ const MAX_PDF_BYTES = 10 * 1024 * 1024;
  * this project's other serverless-runtime workaround
  * (@sparticuz/chromium in generateResumePdf.ts).
  */
-export async function extractResumeTextFromPdf(fileBuffer: ArrayBuffer): Promise<string> {
+export async function extractResumeTextFromPdf(
+  fileBuffer: ArrayBuffer,
+): Promise<string> {
   if (fileBuffer.byteLength === 0) {
     throw new PdfTextExtractionError("That PDF appears to be empty.");
   }
@@ -26,13 +28,13 @@ export async function extractResumeTextFromPdf(fileBuffer: ArrayBuffer): Promise
     text = result.text;
   } catch {
     throw new PdfTextExtractionError(
-      "Could not read that PDF — it may be corrupt or password-protected."
+      "Could not read that PDF - it may be corrupt or password-protected.",
     );
   }
 
   if (!text.trim()) {
     throw new PdfTextExtractionError(
-      "No extractable text found in that PDF — it may be a scanned image rather than a text-based PDF."
+      "No extractable text found in that PDF - it may be a scanned image rather than a text-based PDF.",
     );
   }
 

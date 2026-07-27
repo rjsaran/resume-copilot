@@ -2,7 +2,7 @@ import type { ResumeData } from "@/types/resume";
 
 /**
  * Flattens structured resume data into readable plain text, purely for
- * line-based diffing (see ResumeDiffViewer). This is NOT a rendering path —
+ * line-based diffing (see ResumeDiffViewer). This is NOT a rendering path -
  * the renderer never consumes this; it exists only so two ResumeData
  * snapshots can be compared line by line.
  */
@@ -14,7 +14,7 @@ export function resumeToPlainText(resume: ResumeData): string {
   lines.push(
     [resume.basics.email, resume.basics.phone, resume.basics.location]
       .filter(Boolean)
-      .join(" | ")
+      .join(" | "),
   );
   lines.push("");
 
@@ -27,8 +27,10 @@ export function resumeToPlainText(resume: ResumeData): string {
   if (resume.experience.length > 0) {
     lines.push("EXPERIENCE");
     for (const entry of resume.experience) {
-      lines.push(`${entry.role} — ${entry.company}`);
-      lines.push(`${entry.startDate} - ${entry.endDate}${entry.location ? ` | ${entry.location}` : ""}`);
+      lines.push(`${entry.role} - ${entry.company}`);
+      lines.push(
+        `${entry.startDate} - ${entry.endDate}${entry.location ? ` | ${entry.location}` : ""}`,
+      );
       for (const bullet of entry.bullets) {
         lines.push(`- ${bullet}`);
       }
@@ -61,7 +63,9 @@ export function resumeToPlainText(resume: ResumeData): string {
     ["Tools", resume.skills.tools],
     ["Other", resume.skills.other],
   ];
-  const hasSkills = skillCategories.some(([, items]) => items && items.length > 0);
+  const hasSkills = skillCategories.some(
+    ([, items]) => items && items.length > 0,
+  );
   if (hasSkills) {
     lines.push("SKILLS");
     for (const [label, items] of skillCategories) {
@@ -75,7 +79,7 @@ export function resumeToPlainText(resume: ResumeData): string {
   if (resume.education.length > 0) {
     lines.push("EDUCATION");
     for (const entry of resume.education) {
-      lines.push(`${entry.degree} — ${entry.institution}`);
+      lines.push(`${entry.degree} - ${entry.institution}`);
       const meta = [entry.startDate, entry.endDate].filter(Boolean).join(" - ");
       const extra = [meta, entry.location, entry.gpa ? `GPA: ${entry.gpa}` : ""]
         .filter(Boolean)

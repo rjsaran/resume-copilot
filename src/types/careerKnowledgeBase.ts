@@ -10,7 +10,7 @@ export interface PersonalInfo {
 
 /**
  * One fact per string, unclipped by resume-length constraints. This is the
- * raw material the tailoring step selects and rewords from — richer and
+ * raw material the tailoring step selects and rewords from - richer and
  * longer than anything that would fit on an actual resume.
  */
 export interface ExperienceKnowledge {
@@ -69,12 +69,15 @@ export interface CareerKnowledgeBase {
   education: EducationKnowledge[];
 }
 
-const STRING_ARRAY_SCHEMA = { type: "array", items: { type: "string" } } as const;
+const STRING_ARRAY_SCHEMA = {
+  type: "array",
+  items: { type: "string" },
+} as const;
 
 /**
  * JSON Schema for structured LLM output (response_format.schema) when
  * importing a knowledge base from resume/LinkedIn text. Mirrors
- * CareerKnowledgeBase exactly — keep the two in sync by hand, since
+ * CareerKnowledgeBase exactly - keep the two in sync by hand, since
  * structured output schemas can't be derived automatically from a TS type.
  */
 export const CAREER_KNOWLEDGE_BASE_JSON_SCHEMA = {
@@ -108,7 +111,10 @@ export const CAREER_KNOWLEDGE_BASE_JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          id: { type: "string", description: "Short, stable, kebab-case identifier." },
+          id: {
+            type: "string",
+            description: "Short, stable, kebab-case identifier.",
+          },
           company: { type: "string" },
           role: { type: "string" },
           location: { type: "string" },
@@ -126,9 +132,15 @@ export const CAREER_KNOWLEDGE_BASE_JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          id: { type: "string", description: "Short, stable, kebab-case identifier." },
+          id: {
+            type: "string",
+            description: "Short, stable, kebab-case identifier.",
+          },
           name: { type: "string" },
-          type: { type: "string", enum: ["personal", "professional", "open-source"] },
+          type: {
+            type: "string",
+            enum: ["personal", "professional", "open-source"],
+          },
           role: { type: "string" },
           description: { type: "string" },
           highlights: STRING_ARRAY_SCHEMA,
@@ -156,7 +168,10 @@ export const CAREER_KNOWLEDGE_BASE_JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          id: { type: "string", description: "Short, stable, kebab-case identifier." },
+          id: {
+            type: "string",
+            description: "Short, stable, kebab-case identifier.",
+          },
           institution: { type: "string" },
           degree: { type: "string" },
           location: { type: "string" },
@@ -172,8 +187,13 @@ export const CAREER_KNOWLEDGE_BASE_JSON_SCHEMA = {
   required: ["personal", "experience", "projects", "technologies", "education"],
 } as const;
 
-function isStringArrayOrUndefined(value: unknown): value is string[] | undefined {
-  return value === undefined || (Array.isArray(value) && value.every((v) => typeof v === "string"));
+function isStringArrayOrUndefined(
+  value: unknown,
+): value is string[] | undefined {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.every((v) => typeof v === "string"))
+  );
 }
 
 function isPersonalInfo(value: unknown): value is PersonalInfo {
@@ -190,7 +210,7 @@ function isPersonalInfo(value: unknown): value is PersonalInfo {
             typeof l === "object" &&
             l !== null &&
             typeof (l as Record<string, unknown>).label === "string" &&
-            typeof (l as Record<string, unknown>).url === "string"
+            typeof (l as Record<string, unknown>).url === "string",
         )))
   );
 }
@@ -215,7 +235,9 @@ function isProjectKnowledge(value: unknown): value is ProjectKnowledge {
   return (
     typeof v.id === "string" &&
     typeof v.name === "string" &&
-    (v.type === "personal" || v.type === "professional" || v.type === "open-source") &&
+    (v.type === "personal" ||
+      v.type === "professional" ||
+      v.type === "open-source") &&
     typeof v.description === "string" &&
     Array.isArray(v.highlights) &&
     v.highlights.every((h) => typeof h === "string") &&
@@ -226,7 +248,11 @@ function isProjectKnowledge(value: unknown): value is ProjectKnowledge {
 function isEducationKnowledge(value: unknown): value is EducationKnowledge {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
-  return typeof v.id === "string" && typeof v.institution === "string" && typeof v.degree === "string";
+  return (
+    typeof v.id === "string" &&
+    typeof v.institution === "string" &&
+    typeof v.degree === "string"
+  );
 }
 
 function isTechnologyCategory(value: unknown): value is TechnologyCategory {
@@ -239,7 +265,9 @@ function isTechnologyCategory(value: unknown): value is TechnologyCategory {
   );
 }
 
-export function isCareerKnowledgeBase(value: unknown): value is CareerKnowledgeBase {
+export function isCareerKnowledgeBase(
+  value: unknown,
+): value is CareerKnowledgeBase {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (

@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowRight, KeyRound, Loader2, Sparkles, BookUser } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  KeyRound,
+  Loader2,
+  Sparkles,
+  BookUser,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -138,8 +145,8 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               {cached ? (
                 <p className="text-sm text-muted-foreground">
-                  Showing your last analysis of this posting — nothing changed since then, so no
-                  AI call was made.{" "}
+                  Showing your last analysis of this posting - nothing changed
+                  since then, so no AI call was made.{" "}
                   <button
                     type="button"
                     onClick={() => handleAnalyze(true)}
@@ -164,7 +171,9 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
             <JobAnalysisDashboard
               analysis={analysis}
               tailoredResumeHref={
-                applicationId ? `/applications/${applicationId}#tailored-resume` : "/applications"
+                applicationId
+                  ? `/applications/${applicationId}#tailored-resume`
+                  : "/applications"
               }
               hasTailoredVersion={false}
               applicationStatus="ANALYZED"
