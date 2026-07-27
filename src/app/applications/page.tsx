@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DECISION_META,
-  isDecision,
+  RECOMMENDATION_META,
+  isRecommendationStatus,
   STATUS_BADGE_CLASSNAME,
   STATUS_LABELS,
 } from "@/lib/badge-meta";
@@ -72,10 +72,10 @@ export default async function ApplicationsPage() {
                         {application.overallScore}/100
                       </TableCell>
                       <TableCell>
-                        {isDecision(application.verdict) ? (
+                        {isRecommendationStatus(application.verdict) ? (
                           <Badge
                             className={
-                              DECISION_META[application.verdict].badgeClassName
+                              RECOMMENDATION_META[application.verdict].badgeClassName
                             }
                           >
                             {application.verdict}

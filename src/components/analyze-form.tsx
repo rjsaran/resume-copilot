@@ -161,7 +161,14 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
                 </Link>
               )}
             </div>
-            <JobAnalysisDashboard analysis={analysis} />
+            <JobAnalysisDashboard
+              analysis={analysis}
+              tailoredResumeHref={
+                applicationId ? `/applications/${applicationId}#tailored-resume` : "/applications"
+              }
+              hasTailoredVersion={false}
+              applicationStatus="ANALYZED"
+            />
           </div>
         ) : (
           <Card>

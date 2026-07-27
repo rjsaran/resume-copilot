@@ -14,7 +14,11 @@ export default async function SettingsPage() {
           Manage the LLM provider used for job analysis and resume tailoring.
         </p>
       </div>
-      <SettingsForm hasGeminiKey={Boolean(settings?.encryptedGeminiKey)} />
+      <SettingsForm
+        activeProvider={settings?.activeProvider ?? "GEMINI"}
+        hasGeminiKey={Boolean(settings?.encryptedGeminiKey)}
+        hasOpenRouterKey={Boolean(settings?.encryptedOpenRouterKey)}
+      />
     </main>
   );
 }

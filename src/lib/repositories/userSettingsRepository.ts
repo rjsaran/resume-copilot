@@ -11,6 +11,7 @@ const PROVIDER_KEY_FIELD = {
   GEMINI: "encryptedGeminiKey",
   CLAUDE: "encryptedClaudeKey",
   OPENAI: "encryptedOpenAiKey",
+  OPENROUTER: "encryptedOpenRouterKey",
 } as const;
 
 export async function upsertProviderKey(

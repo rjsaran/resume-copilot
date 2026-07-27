@@ -26,7 +26,7 @@ export interface SaveAnalysisInput {
  */
 export async function saveAnalysis(input: SaveAnalysisInput): Promise<Application> {
   const jobHash = hashJobUrl(input.jobUrl);
-  const { company, jobTitle, matchScore, atsScore, interviewProbability, decision } =
+  const { company, jobTitle, matchScore, atsScore, interviewConfidence, recommendationStatus } =
     input.analysis;
   const analysisJson = JSON.stringify(input.analysis);
 
@@ -41,8 +41,8 @@ export async function saveAnalysis(input: SaveAnalysisInput): Promise<Applicatio
         jobHash,
         overallScore: matchScore,
         atsScore,
-        interviewProbability,
-        verdict: decision,
+        interviewConfidence,
+        verdict: recommendationStatus,
       })
       .onConflictDoUpdate({
         target: [applications.userId, applications.jobHash],
@@ -51,8 +51,8 @@ export async function saveAnalysis(input: SaveAnalysisInput): Promise<Applicatio
           jobTitle,
           overallScore: matchScore,
           atsScore,
-          interviewProbability,
-          verdict: decision,
+          interviewConfidence,
+          verdict: recommendationStatus,
           updatedAt: new Date(),
         },
       })

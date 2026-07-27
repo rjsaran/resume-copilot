@@ -71,7 +71,12 @@ export default async function ApplicationDetailPage({
         </div>
 
         {parsedAnalysis && isJobAnalysis(parsedAnalysis) ? (
-          <JobAnalysisDashboard analysis={parsedAnalysis} />
+          <JobAnalysisDashboard
+            analysis={parsedAnalysis}
+            tailoredResumeHref="#tailored-resume"
+            hasTailoredVersion={application.resumeVersions.some((v) => v.type === "TAILORED")}
+            applicationStatus={application.status}
+          />
         ) : (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -103,28 +108,30 @@ export default async function ApplicationDetailPage({
           </CardContent>
         </Card>
 
-        <TailoredResumePanel
-          applicationId={application.id}
-          initialVersions={application.resumeVersions.reduce<ResumeVersionDTO[]>(
-            (acc, version) => {
-              try {
-                const parsed = JSON.parse(version.resumeJson);
-                if (isResumeData(parsed)) {
-                  acc.push({
-                    id: version.id,
-                    name: version.name,
-                    type: version.type,
-                    resume: parsed,
-                  });
+        <div id="tailored-resume" className="scroll-mt-20">
+          <TailoredResumePanel
+            applicationId={application.id}
+            initialVersions={application.resumeVersions.reduce<ResumeVersionDTO[]>(
+              (acc, version) => {
+                try {
+                  const parsed = JSON.parse(version.resumeJson);
+                  if (isResumeData(parsed)) {
+                    acc.push({
+                      id: version.id,
+                      name: version.name,
+                      type: version.type,
+                      resume: parsed,
+                    });
+                  }
+                } catch {
+                  // Skip versions with corrupt JSON rather than crashing the page.
                 }
-              } catch {
-                // Skip versions with corrupt JSON rather than crashing the page.
-              }
-              return acc;
-            },
-            []
-          )}
-        />
+                return acc;
+              },
+              []
+            )}
+          />
+        </div>
 
         <Card>
           <CardHeader>

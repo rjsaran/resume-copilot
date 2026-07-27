@@ -3,6 +3,7 @@ import { decryptSecret } from "@/lib/crypto";
 import { GeminiProvider } from "@/services/llm/providers/gemini";
 import { ClaudeProvider } from "@/services/llm/providers/claude";
 import { OpenAIProvider } from "@/services/llm/providers/openai";
+import { OpenRouterProvider } from "@/services/llm/providers/openrouter";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
 import type { LlmProvider as LlmProviderName } from "@/lib/db/schema";
 
@@ -10,10 +11,12 @@ const ENCRYPTED_KEY_BY_PROVIDER: Record<LlmProviderName, keyof {
   encryptedGeminiKey: string | null;
   encryptedClaudeKey: string | null;
   encryptedOpenAiKey: string | null;
+  encryptedOpenRouterKey: string | null;
 }> = {
   GEMINI: "encryptedGeminiKey",
   CLAUDE: "encryptedClaudeKey",
   OPENAI: "encryptedOpenAiKey",
+  OPENROUTER: "encryptedOpenRouterKey",
 };
 
 /**
@@ -43,5 +46,7 @@ export async function getUserLlmProvider(userId: string): Promise<LLMProvider> {
       return new ClaudeProvider(apiKey);
     case "OPENAI":
       return new OpenAIProvider(apiKey);
+    case "OPENROUTER":
+      return new OpenRouterProvider(apiKey);
   }
 }

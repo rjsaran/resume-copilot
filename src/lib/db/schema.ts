@@ -13,7 +13,7 @@ export const applicationStatusEnum = pgEnum("application_status", [
 
 export const resumeVersionTypeEnum = pgEnum("resume_version_type", ["MASTER", "TAILORED"]);
 
-export const llmProviderEnum = pgEnum("llm_provider", ["GEMINI", "CLAUDE", "OPENAI"]);
+export const llmProviderEnum = pgEnum("llm_provider", ["GEMINI", "CLAUDE", "OPENAI", "OPENROUTER"]);
 
 export const applications = pgTable(
   "applications",
@@ -29,7 +29,9 @@ export const applications = pgTable(
     status: applicationStatusEnum("status").notNull().default("ANALYZED"),
     overallScore: integer("overall_score").notNull(),
     atsScore: integer("ats_score").notNull(),
-    interviewProbability: integer("interview_probability").notNull(),
+    // "High" | "Medium" | "Low" — never a fabricated percentage. Kept purely
+    // for reference; nothing currently sorts/filters on this column.
+    interviewConfidence: text("interview_confidence").notNull(),
     verdict: text("verdict").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -133,6 +135,7 @@ export const userSettings = pgTable("user_settings", {
   encryptedGeminiKey: text("encrypted_gemini_key"),
   encryptedClaudeKey: text("encrypted_claude_key"),
   encryptedOpenAiKey: text("encrypted_openai_key"),
+  encryptedOpenRouterKey: text("encrypted_openrouter_key"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
