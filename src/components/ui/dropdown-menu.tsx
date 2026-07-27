@@ -68,11 +68,15 @@ function DropdownMenuLinkItem({ className, ...props }: MenuPrimitive.LinkItem.Pr
 
 function DropdownMenuLabel({ className, ...props }: MenuPrimitive.GroupLabel.Props) {
   return (
-    <MenuPrimitive.GroupLabel
-      data-slot="dropdown-menu-label"
-      className={cn("px-2 py-1.5 text-xs text-muted-foreground", className)}
-      {...props}
-    />
+    // Base UI requires GroupLabel to be rendered inside a Group, even when
+    // (as here) it's just a static header with no grouped items below it.
+    <MenuPrimitive.Group>
+      <MenuPrimitive.GroupLabel
+        data-slot="dropdown-menu-label"
+        className={cn("px-2 py-1.5 text-xs text-muted-foreground", className)}
+        {...props}
+      />
+    </MenuPrimitive.Group>
   )
 }
 
