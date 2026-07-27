@@ -1,17 +1,10 @@
 import type { JobAnalysis } from "@/types/analysis";
-import type { ResumeData } from "@/types/resume";
 import type { CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
-
-export interface HistoricalResumeVersion {
-  name: string;
-  resume: ResumeData;
-}
 
 export interface ResumeTailorPromptInput {
   careerKnowledgeBase: CareerKnowledgeBase;
   jobDescription: string;
   analysis: JobAnalysis;
-  historicalResumeVersions?: HistoricalResumeVersion[];
 }
 
 export interface ResumeTailorPrompt {
@@ -56,19 +49,6 @@ const SYSTEM_INSTRUCTION = [
   "- The result should read as a natural, well-structured professional resume, not a keyword list.",
 ].join("\n");
 
-function formatHistoricalVersions(versions: HistoricalResumeVersion[]): string {
-  const body = versions
-    .map((version) => `## ${version.name}\n\n${JSON.stringify(version.resume, null, 2)}`)
-    .join("\n\n---\n\n");
-
-  return (
-    "# Historical Tailored Resume Versions\n\n" +
-    "(For reference and consistency across regenerations. Do not simply copy these — " +
-    "always tailor from the Career Knowledge Base JSON, using these only to avoid unnecessary churn.)\n\n" +
-    body
-  );
-}
-
 export function buildResumeTailorPrompt(
   input: ResumeTailorPromptInput
 ): ResumeTailorPrompt {
@@ -76,18 +56,11 @@ export function buildResumeTailorPrompt(
     `# Career Knowledge Base (JSON)\n\n${JSON.stringify(input.careerKnowledgeBase, null, 2)}`,
     `# Job Description\n\n${input.jobDescription}`,
     `# Analysis (JSON)\n\n${JSON.stringify(input.analysis, null, 2)}`,
-  ];
-
-  if (input.historicalResumeVersions && input.historicalResumeVersions.length > 0) {
-    sections.push(formatHistoricalVersions(input.historicalResumeVersions));
-  }
-
-  sections.push(
     "# Task\n\n" +
       "Using only facts present in the Career Knowledge Base JSON above, select and reword a subset of it " +
       "into a tailored resume as JSON (resume schema) optimized for the Job Description and Analysis above. " +
-      "Follow every rule in your system instructions exactly."
-  );
+      "Follow every rule in your system instructions exactly.",
+  ];
 
   return {
     systemInstruction: SYSTEM_INSTRUCTION,

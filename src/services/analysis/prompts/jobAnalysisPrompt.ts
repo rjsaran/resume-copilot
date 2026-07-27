@@ -13,8 +13,7 @@ const SYSTEM_INSTRUCTION = [
   "",
   "Compare:",
   "",
-  "1. Candidate Career History — a full knowledge base of every job, achievement, project, and skill the candidate has. It is deliberately richer than any single resume: a tailored resume is built later by selecting and rewording a relevant subset of it for a specific job.",
-  "Do not assume everything here would appear verbatim on a resume.",
+  "1. Candidate Career History — a condensed summary of every job, project, and skill the candidate has: role, company, dates, technologies, and a short one-line summary per entry. It deliberately omits full achievement detail (that level of detail is only used later, when actually building a tailored resume). Use it to judge fit — seniority, domain, technology overlap — not to quote from directly.",
   "2. Job Description",
   "",
   "Return JSON.",
@@ -33,6 +32,14 @@ const SYSTEM_INSTRUCTION = [
   "- Resume sections to rewrite",
   "- Interview probability",
   "- Apply / Tailor / Skip",
+  "",
+  "Keep every list field short and scannable, not exhaustive:",
+  "- hardBlockers: at most 3 items",
+  "- resumeWordingImprovements: at most 4 items",
+  "- missingTechnologies: at most 5 items, technology names only (e.g. \"Kubernetes\", not a sentence)",
+  "- missingDomainKnowledge: at most 3 items",
+  "- resumeSectionsToRewrite: at most 3 items, section names only (e.g. \"Summary\", \"Skills\")",
+  "Each item should be a single short phrase or sentence — no multi-sentence items.",
 ].join("\n");
 
 export function buildJobAnalysisPrompt(input: JobAnalysisPromptInput): JobAnalysisPrompt {

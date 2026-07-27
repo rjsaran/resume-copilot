@@ -1,11 +1,18 @@
 import type { CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
 
 /**
- * Flattens the full career knowledge base into readable plain text for the
- * job-analysis prompt (see /api/analyze). This intentionally includes every
- * experience achievement and personal project — richer than any single
- * resume — so the analyzer judges match/gaps against the candidate's full
- * history, not just whatever fit on a two-page resume.
+ * Condensed plain-text projection of the knowledge base, for the job-analysis
+ * prompt (see /api/analyze). This is the "lightweight" tier: one line per
+ * experience/project entry (role, company, dates, tech, and the short
+ * per-role summary if present) instead of full achievement bullets and
+ * project descriptions — enough signal to judge fit (seniority, domain,
+ * tech stack) without paying for the full prose on every analysis.
+ *
+ * The full knowledge base (all achievements, all detail) is a separate,
+ * heavier tier reserved for resume tailoring, which needs the complete
+ * source material to select and reword from — see
+ * services/resume/prompts/resumeTailorPrompt.ts, which sends the raw
+ * CareerKnowledgeBase JSON directly.
  */
 export function careerKnowledgeBaseToText(kb: CareerKnowledgeBase): string {
   const lines: string[] = [];
@@ -26,34 +33,23 @@ export function careerKnowledgeBaseToText(kb: CareerKnowledgeBase): string {
   if (kb.experience.length > 0) {
     lines.push("EXPERIENCE");
     for (const entry of kb.experience) {
-      lines.push(`${entry.role} — ${entry.company}`);
+      const dates = `${entry.startDate} - ${entry.endDate ?? "Present"}`;
+      const tech = entry.technologies && entry.technologies.length > 0 ? entry.technologies.join(", ") : "";
       lines.push(
-        `${entry.startDate} - ${entry.endDate ?? "Present"}${entry.location ? ` | ${entry.location}` : ""}`
+        `${entry.role} @ ${entry.company} (${dates})${tech ? ` — ${tech}` : ""}`
       );
       if (entry.summary) lines.push(entry.summary);
-      for (const achievement of entry.achievements) {
-        lines.push(`- ${achievement}`);
-      }
-      if (entry.technologies && entry.technologies.length > 0) {
-        lines.push(`Technologies: ${entry.technologies.join(", ")}`);
-      }
-      lines.push("");
     }
+    lines.push("");
   }
 
   if (kb.projects.length > 0) {
     lines.push("PROJECTS");
     for (const project of kb.projects) {
-      lines.push(`${project.name} (${project.type})`);
-      lines.push(project.description);
-      for (const highlight of project.highlights) {
-        lines.push(`- ${highlight}`);
-      }
-      if (project.technologies && project.technologies.length > 0) {
-        lines.push(`Technologies: ${project.technologies.join(", ")}`);
-      }
-      lines.push("");
+      const tech = project.technologies && project.technologies.length > 0 ? project.technologies.join(", ") : "";
+      lines.push(`${project.name} (${project.type})${tech ? ` — ${tech}` : ""}`);
     }
+    lines.push("");
   }
 
   if (kb.technologies.length > 0) {
@@ -67,17 +63,10 @@ export function careerKnowledgeBaseToText(kb: CareerKnowledgeBase): string {
   if (kb.education.length > 0) {
     lines.push("EDUCATION");
     for (const entry of kb.education) {
-      lines.push(`${entry.degree} — ${entry.institution}`);
       const meta = [entry.startDate, entry.endDate].filter(Boolean).join(" - ");
-      const extra = [meta, entry.location, entry.gpa ? `GPA: ${entry.gpa}` : ""]
-        .filter(Boolean)
-        .join(" | ");
-      if (extra) lines.push(extra);
-      for (const note of entry.notes ?? []) {
-        lines.push(`- ${note}`);
-      }
-      lines.push("");
+      lines.push(`${entry.degree} — ${entry.institution}${meta ? ` (${meta})` : ""}`);
     }
+    lines.push("");
   }
 
   return lines.join("\n").trim();

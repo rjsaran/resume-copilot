@@ -64,7 +64,7 @@ export function TailoredResumePanel({
 }) {
   const [versions, setVersions] = useState<ResumeVersionDTO[]>(initialVersions);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
-    () => initialVersions.find((v) => v.type === "TAILORED")?.id ?? null
+    () => initialVersions.find((v) => v.type === "TAILORED")?.id ?? null,
   );
   const [view, setView] = useState<ViewMode>("preview");
   const [draft, setDraft] = useState<ResumeData | null>(null);
@@ -75,15 +75,15 @@ export function TailoredResumePanel({
 
   const masterVersion = useMemo(
     () => versions.find((v) => v.type === "MASTER"),
-    [versions]
+    [versions],
   );
   const tailoredVersions = useMemo(
     () => versions.filter((v) => v.type === "TAILORED"),
-    [versions]
+    [versions],
   );
   const selectedVersion = useMemo(
     () => tailoredVersions.find((v) => v.id === selectedVersionId) ?? null,
-    [tailoredVersions, selectedVersionId]
+    [tailoredVersions, selectedVersionId],
   );
 
   // Discard any in-progress edit draft whenever the selected version changes,
@@ -105,7 +105,7 @@ export function TailoredResumePanel({
     if (
       tailoredVersions.length > 0 &&
       !window.confirm(
-        "Regenerate the tailored resume? This uses another AI call and adds a new version."
+        "Regenerate the tailored resume? This uses another AI call and adds a new version.",
       )
     ) {
       return;
@@ -133,7 +133,10 @@ export function TailoredResumePanel({
         // MASTER snapshot server-side; make sure the client picks it up
         // too instead of only ever seeing the TAILORED version.
         const withoutStale = prev.filter((v) => v.id !== tailoredDto.id);
-        if (result.masterVersion && !withoutStale.some((v) => v.id === result.masterVersion!.id)) {
+        if (
+          result.masterVersion &&
+          !withoutStale.some((v) => v.id === result.masterVersion!.id)
+        ) {
           const masterDto: ResumeVersionDTO = {
             id: result.masterVersion.id,
             name: result.masterVersion.name,
@@ -163,7 +166,7 @@ export function TailoredResumePanel({
       const result = await updateResumeVersionAction(
         applicationId,
         selectedVersion.id,
-        draft
+        draft,
       );
 
       if (!result.success || !result.resumeVersion) {
@@ -174,7 +177,7 @@ export function TailoredResumePanel({
       const updated = result.resumeVersion;
       const resume = JSON.parse(updated.resumeJson) as ResumeData;
       setVersions((prev) =>
-        prev.map((v) => (v.id === updated.id ? { ...v, resume } : v))
+        prev.map((v) => (v.id === updated.id ? { ...v, resume } : v)),
       );
       setDraft(null);
     });
@@ -215,7 +218,7 @@ export function TailoredResumePanel({
             <CardTitle>Tailored Resume</CardTitle>
             <CardDescription>
               AI-tailored version for this job, rendered from structured resume
-              data — not Markdown.
+              data.
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -227,7 +230,8 @@ export function TailoredResumePanel({
                 <SelectTrigger className="w-40">
                   <SelectValue>
                     {(id: string) =>
-                      tailoredVersions.find((version) => version.id === id)?.name ?? ""
+                      tailoredVersions.find((version) => version.id === id)
+                        ?.name ?? ""
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -311,7 +315,11 @@ export function TailoredResumePanel({
                   )}
                   {copied ? "Copied" : "Copy JSON"}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleDownloadJson}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadJson}
+                >
                   <Download className="size-3.5" />
                   Download JSON
                 </Button>
@@ -324,8 +332,8 @@ export function TailoredResumePanel({
 
             {hasUnsavedChanges && view !== "edit" && (
               <p className="text-xs text-muted-foreground">
-                You have unsaved edits. Switch to Edit and save them to include in
-                the exported PDF.
+                You have unsaved edits. Switch to Edit and save them to include
+                in the exported PDF.
               </p>
             )}
 
@@ -375,7 +383,7 @@ function ViewTab({
         "flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors",
         active
           ? "bg-foreground text-background"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
       <Icon className="size-3.5" />

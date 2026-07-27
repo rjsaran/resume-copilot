@@ -13,7 +13,6 @@ import {
   createResumeVersion,
   getLatestResumeVersionByType,
   getResumeVersion,
-  getResumeVersions,
   updateResumeVersion,
 } from "@/lib/repositories/resumeRepository";
 import { generateTailoredResume, ResumeTailorError } from "@/services/resume/resumeTailor";
@@ -64,11 +63,14 @@ export interface GenerateTailoredResumeResult {
  * Generates a new tailored resume version for an application:
  *
  *   Career Knowledge Base (full JSON, per user)
- *     + Job Description + Analysis JSON (+ prior tailored JSON versions)
+ *     + Job Description + Analysis JSON
  *   -> user's LLM provider selects & rewords a subset -> tailored_resume.json -> new ResumeVersion row
  *
  * The model only ever sees/produces ResumeData JSON — never Markdown or
  * HTML. Always creates a new version; never overwrites a previous one.
+ * Each regeneration is independent — no prior tailored versions are sent
+ * back to the model, which keeps token cost flat regardless of how many
+ * times a resume has been regenerated for this application.
  */
 export async function generateTailoredResumeAction(
   applicationId: string
@@ -143,19 +145,6 @@ export async function generateTailoredResumeAction(
     });
   }
 
-  const historicalTailored = (await getResumeVersions(applicationId))
-    .filter((version) => version.type === "TAILORED")
-    .slice(0, 2)
-    .map((version) => {
-      try {
-        const parsed = JSON.parse(version.resumeJson);
-        return isResumeData(parsed) ? { name: version.name, resume: parsed } : null;
-      } catch {
-        return null;
-      }
-    })
-    .filter((v): v is { name: string; resume: ResumeData } => v !== null);
-
   let tailoredResume: ResumeData;
   try {
     tailoredResume = await generateTailoredResume(
@@ -163,7 +152,6 @@ export async function generateTailoredResumeAction(
         careerKnowledgeBase,
         jobDescription: application.analysis.jdMarkdown,
         analysis: analysisData,
-        historicalResumeVersions: historicalTailored,
       },
       provider
     );
