@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getApplication } from "@/lib/repositories/applicationRepository";
 import { JobAnalysisDashboard } from "@/components/job-analysis-dashboard";
 import { StatusSelect } from "@/components/status-select";
 import { TailoredResumePanel } from "@/components/tailored-resume-panel";
+import { JobDescriptionCard } from "@/components/job-description-card";
 import {
   Card,
   CardContent,
@@ -85,29 +86,6 @@ export default async function ApplicationDetailPage({
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <FileText className="size-4 text-muted-foreground" />
-              <CardTitle>Original Job Description</CardTitle>
-            </div>
-            <CardDescription>
-              Extracted markdown from the posting URL.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {application.analysis ? (
-              <pre className="max-h-96 overflow-y-auto rounded-md bg-muted p-4 text-xs whitespace-pre-wrap text-muted-foreground">
-                {application.analysis.jdMarkdown}
-              </pre>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No job description saved.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
         <div id="tailored-resume" className="scroll-mt-20">
           <TailoredResumePanel
             applicationId={application.id}
@@ -164,6 +142,8 @@ export default async function ApplicationDetailPage({
             )}
           </CardContent>
         </Card>
+
+        <JobDescriptionCard jdMarkdown={application.analysis?.jdMarkdown ?? null} />
       </main>
     </div>
   );

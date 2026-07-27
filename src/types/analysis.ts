@@ -108,7 +108,7 @@ const STRENGTH_SCHEMA = {
       items: { type: "string", maxLength: 100 },
       maxItems: 3,
       description:
-        "1-3 specific facts from the career history that support this strength — company/role/achievement, not a generic restatement of the title.",
+        '1-3 concrete facts from the career history that support this strength — name the company, technology, scale, or metric involved (e.g. "Led the payments migration serving 2M users at Acme Corp"). Never a vague or generic restatement of the title (e.g. "has strong backend experience").',
     },
   },
   required: ["title", "evidence"],
@@ -312,7 +312,7 @@ export const JOB_ANALYSIS_SCHEMA = {
       items: GAP_SCHEMA,
       maxItems: 6,
       description:
-        "Missing or weak technologies/domain knowledge, each with severity, evidence-grounded reason, and whether tailoring can help. At most 6, sorted by severity (high first).",
+        "Missing or weak technologies/domain knowledge, each with severity, evidence-grounded reason, and whether tailoring can help. Merge overlapping or near-duplicate gaps into a single entry (e.g. don't list \"Kubernetes\" and \"container orchestration\" separately if they refer to the same missing skill) — each entry must be a genuinely distinct issue. At most 6, sorted by severity (high first).",
     },
     hardBlockers: {
       type: "array",
@@ -324,15 +324,16 @@ export const JOB_ANALYSIS_SCHEMA = {
     coverage: {
       type: "array",
       items: COVERAGE_ITEM_SCHEMA,
-      maxItems: 20,
+      maxItems: 15,
       description:
-        "Every distinct requirement identified in the job description (technology, domain, responsibility, or qualification), each marked covered/partial/missing against the career history. A technology appearing only in a skills list, with no demonstrated production use, is at most partial — never covered on keyword presence alone. Typically 6-15 items.",
+        "Every distinct requirement identified in the job description (technology, domain, responsibility, or qualification), each marked covered/partial/missing against the career history. Merge requirements that overlap or restate each other (e.g. don't list \"AWS\" and \"cloud experience\" as two entries when the JD is asking about one thing) into a single entry. A technology appearing only in a skills list, with no demonstrated production use, is at most partial — never covered on keyword presence alone. At most 15, typically 6-12.",
     },
     quickWins: {
       type: "array",
       items: QUICK_WIN_SCHEMA,
       maxItems: 5,
-      description: "The highest-ROI resume wording/structure edits for this job, ranked by impact. At most 5.",
+      description:
+        "The highest-ROI resume wording/structure edits for this job, ranked by impact. Each must be traceable to a specific fact already present in the Candidate Career History — never generic resume advice (e.g. \"add more metrics\", \"use stronger verbs\") that isn't tied to something concrete this candidate actually has. At most 5.",
     },
     recruiterFirstImpression: {
       type: "string",

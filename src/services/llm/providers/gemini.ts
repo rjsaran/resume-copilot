@@ -37,8 +37,10 @@ export class GeminiProvider implements LLMProvider {
         // Extraction/transcription tasks want deterministic, on-task
         // output - the default temperature (~1.0) is what lets the model
         // drift into repetitive filler text instead of finishing the
-        // extraction faithfully.
-        generation_config: { temperature: 0.1 },
+        // extraction faithfully. max_output_tokens is set explicitly since
+        // the model's own default can be too low for this schema's size,
+        // silently truncating the JSON mid-object.
+        generation_config: { temperature: 0.1, max_output_tokens: 8192 },
         response_format: {
           type: "text",
           mime_type: "application/json",
