@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { LlmProvider, UserSettings } from "@/generated/prisma/client";
+import type { LlmProvider, UserSettings } from "@prisma/client";
 
 export function getUserSettings(userId: string): Promise<UserSettings | null> {
   return db.userSettings.findUnique({ where: { userId } });

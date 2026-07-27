@@ -36,7 +36,7 @@ import {
   generateTailoredResumeAction,
   updateResumeVersionAction,
 } from "@/app/applications/[id]/actions";
-import type { ResumeVersionType } from "@/generated/prisma/client";
+import type { ResumeVersionType } from "@prisma/client";
 import type { ResumeData } from "@/types/resume";
 
 export interface ResumeVersionDTO {

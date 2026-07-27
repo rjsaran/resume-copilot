@@ -1,5 +1,5 @@
 import { CheckCircle2, PencilLine, XCircle } from "lucide-react";
-import type { ApplicationStatus } from "@/generated/prisma/client";
+import type { ApplicationStatus } from "@prisma/client";
 import type { Decision } from "@/types/analysis";
 
 export const DECISION_META: Record<

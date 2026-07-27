@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { db } from "@/lib/db";
-import type { Application, ApplicationStatus } from "@/generated/prisma/client";
+import type { Application, ApplicationStatus } from "@prisma/client";
 import type { JobAnalysis } from "@/types/analysis";
 
 export function hashJobUrl(jobUrl: string): string {

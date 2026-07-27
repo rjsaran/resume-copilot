@@ -41,12 +41,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/src/generated/prisma
-
 # sqlite
 /prisma/*.db
 /prisma/*.db-journal
 
-# personal career data (real PII) — used only for local dev's optional
-# "Import from file" bootstrap; the app itself reads from the per-user DB
+# personal career data (real PII) — no longer read by the app at runtime
+# (knowledge base is per-user in the DB), kept locally only for reference
 /resume/

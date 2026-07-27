@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Application, ResumeVersion, ResumeVersionType } from "@/generated/prisma/client";
+import type { Application, ResumeVersion, ResumeVersionType } from "@prisma/client";
 import type { ResumeData } from "@/types/resume";
 
 export interface CreateResumeVersionInput {
