@@ -1,6 +1,8 @@
 import { createHash } from "crypto";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import type { Application, ApplicationStatus } from "@prisma/client";
+import { analyses, applications, outcomes, resumeVersions } from "@/lib/db/schema";
+import type { Application, ApplicationStatus } from "@/lib/db/schema";
 import type { JobAnalysis } from "@/types/analysis";
 
 export function hashJobUrl(jobUrl: string): string {
@@ -22,73 +24,71 @@ export interface SaveAnalysisInput {
  * a duplicate — two different users analyzing the same job posting each get
  * their own Application row.
  */
-export async function saveAnalysis(
-  input: SaveAnalysisInput
-): Promise<Application> {
+export async function saveAnalysis(input: SaveAnalysisInput): Promise<Application> {
   const jobHash = hashJobUrl(input.jobUrl);
   const { company, jobTitle, matchScore, atsScore, interviewProbability, decision } =
     input.analysis;
   const analysisJson = JSON.stringify(input.analysis);
 
-  return db.application.upsert({
-    where: { userId_jobHash: { userId: input.userId, jobHash } },
-    create: {
-      userId: input.userId,
-      company,
-      jobTitle,
-      jobUrl: input.jobUrl,
-      jobHash,
-      overallScore: matchScore,
-      atsScore,
-      interviewProbability,
-      verdict: decision,
-      analysis: {
-        create: {
-          jdMarkdown: input.jdMarkdown,
-          analysisJson,
-          model: input.model,
+  return db.transaction(async (tx) => {
+    const [application] = await tx
+      .insert(applications)
+      .values({
+        userId: input.userId,
+        company,
+        jobTitle,
+        jobUrl: input.jobUrl,
+        jobHash,
+        overallScore: matchScore,
+        atsScore,
+        interviewProbability,
+        verdict: decision,
+      })
+      .onConflictDoUpdate({
+        target: [applications.userId, applications.jobHash],
+        set: {
+          company,
+          jobTitle,
+          overallScore: matchScore,
+          atsScore,
+          interviewProbability,
+          verdict: decision,
+          updatedAt: new Date(),
         },
-      },
-    },
-    update: {
-      company,
-      jobTitle,
-      overallScore: matchScore,
-      atsScore,
-      interviewProbability,
-      verdict: decision,
-      analysis: {
-        upsert: {
-          create: {
-            jdMarkdown: input.jdMarkdown,
-            analysisJson,
-            model: input.model,
-          },
-          update: {
-            jdMarkdown: input.jdMarkdown,
-            analysisJson,
-            model: input.model,
-          },
-        },
-      },
-    },
+      })
+      .returning();
+
+    await tx
+      .insert(analyses)
+      .values({
+        applicationId: application.id,
+        jdMarkdown: input.jdMarkdown,
+        analysisJson,
+        model: input.model,
+      })
+      .onConflictDoUpdate({
+        target: analyses.applicationId,
+        set: { jdMarkdown: input.jdMarkdown, analysisJson, model: input.model },
+      });
+
+    return application;
   });
 }
 
 export function getApplications(userId: string) {
-  return db.application.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
+  return db.query.applications.findMany({
+    where: eq(applications.userId, userId),
+    orderBy: [desc(applications.createdAt)],
   });
 }
 
 export function getApplication(id: string, userId: string) {
-  return db.application.findFirst({
-    where: { id, userId },
-    include: {
+  return db.query.applications.findFirst({
+    where: and(eq(applications.id, id), eq(applications.userId, userId)),
+    with: {
       analysis: true,
-      resumeVersions: { orderBy: { createdAt: "desc" } },
-      outcomes: { orderBy: { createdAt: "desc" } },
+      resumeVersions: { orderBy: [desc(resumeVersions.createdAt)] },
+      outcomes: { orderBy: [desc(outcomes.createdAt)] },
     },
   });
 }
@@ -98,10 +98,10 @@ export async function updateStatus(
   userId: string,
   status: ApplicationStatus
 ): Promise<void> {
-  await db.application.updateMany({
-    where: { id, userId },
-    data: { status },
-  });
+  await db
+    .update(applications)
+    .set({ status, updatedAt: new Date() })
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)));
 }
 
 export interface SaveOutcomeInput {
@@ -110,6 +110,7 @@ export interface SaveOutcomeInput {
   notes?: string;
 }
 
-export function saveOutcome(input: SaveOutcomeInput) {
-  return db.outcome.create({ data: input });
+export async function saveOutcome(input: SaveOutcomeInput) {
+  const [outcome] = await db.insert(outcomes).values(input).returning();
+  return outcome;
 }

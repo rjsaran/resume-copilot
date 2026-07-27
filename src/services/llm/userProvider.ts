@@ -4,7 +4,7 @@ import { GeminiProvider } from "@/services/llm/providers/gemini";
 import { ClaudeProvider } from "@/services/llm/providers/claude";
 import { OpenAIProvider } from "@/services/llm/providers/openai";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
-import type { LlmProvider as LlmProviderName } from "@prisma/client";
+import type { LlmProvider as LlmProviderName } from "@/lib/db/schema";
 
 const ENCRYPTED_KEY_BY_PROVIDER: Record<LlmProviderName, keyof {
   encryptedGeminiKey: string | null;

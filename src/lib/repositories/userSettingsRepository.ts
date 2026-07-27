@@ -1,8 +1,10 @@
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import type { LlmProvider, UserSettings } from "@prisma/client";
+import { userSettings } from "@/lib/db/schema";
+import type { LlmProvider, UserSettings } from "@/lib/db/schema";
 
-export function getUserSettings(userId: string): Promise<UserSettings | null> {
-  return db.userSettings.findUnique({ where: { userId } });
+export function getUserSettings(userId: string): Promise<UserSettings | undefined> {
+  return db.query.userSettings.findFirst({ where: eq(userSettings.userId, userId) });
 }
 
 const PROVIDER_KEY_FIELD = {
@@ -17,25 +19,35 @@ export async function upsertProviderKey(
   encryptedKey: string
 ): Promise<UserSettings> {
   const field = PROVIDER_KEY_FIELD[provider];
-  return db.userSettings.upsert({
-    where: { userId },
-    create: { userId, activeProvider: provider, [field]: encryptedKey },
-    update: { [field]: encryptedKey },
-  });
+  const [row] = await db
+    .insert(userSettings)
+    .values({ userId, activeProvider: provider, [field]: encryptedKey })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: { [field]: encryptedKey, updatedAt: new Date() },
+    })
+    .returning();
+  return row;
 }
 
 export async function clearProviderKey(userId: string, provider: LlmProvider): Promise<UserSettings> {
   const field = PROVIDER_KEY_FIELD[provider];
-  return db.userSettings.update({
-    where: { userId },
-    data: { [field]: null },
-  });
+  const [row] = await db
+    .update(userSettings)
+    .set({ [field]: null, updatedAt: new Date() })
+    .where(eq(userSettings.userId, userId))
+    .returning();
+  return row;
 }
 
 export async function setActiveProvider(userId: string, provider: LlmProvider): Promise<UserSettings> {
-  return db.userSettings.upsert({
-    where: { userId },
-    create: { userId, activeProvider: provider },
-    update: { activeProvider: provider },
-  });
+  const [row] = await db
+    .insert(userSettings)
+    .values({ userId, activeProvider: provider })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: { activeProvider: provider, updatedAt: new Date() },
+    })
+    .returning();
+  return row;
 }

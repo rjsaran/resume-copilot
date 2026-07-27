@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { ALL_APPLICATION_STATUSES, STATUS_LABELS } from "@/lib/badge-meta";
 import { updateApplicationStatusAction } from "@/app/applications/[id]/actions";
-import type { ApplicationStatus } from "@prisma/client";
+import type { ApplicationStatus } from "@/lib/db/schema";
 
 export function StatusSelect({
   applicationId,

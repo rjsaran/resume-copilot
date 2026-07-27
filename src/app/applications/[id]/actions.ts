@@ -23,7 +23,7 @@ import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
 import { isJobAnalysis } from "@/types/analysis";
 import { isResumeData, type ResumeData } from "@/types/resume";
-import type { ApplicationStatus, ResumeVersion } from "@prisma/client";
+import type { ApplicationStatus, ResumeVersion } from "@/lib/db/schema";
 
 export async function updateApplicationStatusAction(
   applicationId: string,

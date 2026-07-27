@@ -1,11 +1,13 @@
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { knowledgeBases } from "@/lib/db/schema";
 import { isCareerKnowledgeBase, type CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
 
 export class KnowledgeBaseError extends Error {}
 
 /** Null when the user hasn't created a knowledge base yet. */
 export async function getKnowledgeBase(userId: string): Promise<CareerKnowledgeBase | null> {
-  const row = await db.knowledgeBase.findUnique({ where: { userId } });
+  const row = await db.query.knowledgeBases.findFirst({ where: eq(knowledgeBases.userId, userId) });
   if (!row) return null;
 
   let parsed: unknown;
@@ -42,9 +44,11 @@ export async function upsertKnowledgeBase(
   data: CareerKnowledgeBase
 ): Promise<void> {
   const dataJson = JSON.stringify(data);
-  await db.knowledgeBase.upsert({
-    where: { userId },
-    create: { userId, dataJson },
-    update: { dataJson },
-  });
+  await db
+    .insert(knowledgeBases)
+    .values({ userId, dataJson })
+    .onConflictDoUpdate({
+      target: knowledgeBases.userId,
+      set: { dataJson, updatedAt: new Date() },
+    });
 }

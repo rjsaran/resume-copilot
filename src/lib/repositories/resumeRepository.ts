@@ -1,5 +1,7 @@
+import { and, count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import type { Application, ResumeVersion, ResumeVersionType } from "@prisma/client";
+import { resumeVersions } from "@/lib/db/schema";
+import type { Application, ResumeVersion, ResumeVersionType } from "@/lib/db/schema";
 import type { ResumeData } from "@/types/resume";
 
 export interface CreateResumeVersionInput {
@@ -15,25 +17,25 @@ export interface CreateResumeVersionInput {
  * them. Direct edits to a version's content go through updateResumeVersion
  * instead, which mutates in place.
  */
-export function createResumeVersion(
+export async function createResumeVersion(
   input: CreateResumeVersionInput
 ): Promise<ResumeVersion> {
-  return db.resumeVersion.create({
-    data: {
+  const [version] = await db
+    .insert(resumeVersions)
+    .values({
       applicationId: input.applicationId,
       name: input.name,
       type: input.type,
       resumeJson: JSON.stringify(input.resume),
-    },
-  });
+    })
+    .returning();
+  return version;
 }
 
-export function getResumeVersions(
-  applicationId: string
-): Promise<ResumeVersion[]> {
-  return db.resumeVersion.findMany({
-    where: { applicationId },
-    orderBy: { createdAt: "desc" },
+export function getResumeVersions(applicationId: string): Promise<ResumeVersion[]> {
+  return db.query.resumeVersions.findMany({
+    where: eq(resumeVersions.applicationId, applicationId),
+    orderBy: [desc(resumeVersions.createdAt)],
   });
 }
 
@@ -46,25 +48,32 @@ export function getResumeVersions(
  */
 export function getResumeVersion(
   id: string
-): Promise<(ResumeVersion & { application: Application }) | null> {
-  return db.resumeVersion.findUnique({ where: { id }, include: { application: true } });
+): Promise<(ResumeVersion & { application: Application }) | undefined> {
+  return db.query.resumeVersions.findFirst({
+    where: eq(resumeVersions.id, id),
+    with: { application: true },
+  });
 }
 
 export function getLatestResumeVersionByType(
   applicationId: string,
   type: ResumeVersionType
-): Promise<ResumeVersion | null> {
-  return db.resumeVersion.findFirst({
-    where: { applicationId, type },
-    orderBy: { createdAt: "desc" },
+): Promise<ResumeVersion | undefined> {
+  return db.query.resumeVersions.findFirst({
+    where: and(eq(resumeVersions.applicationId, applicationId), eq(resumeVersions.type, type)),
+    orderBy: [desc(resumeVersions.createdAt)],
   });
 }
 
-export function countResumeVersionsByType(
+export async function countResumeVersionsByType(
   applicationId: string,
   type: ResumeVersionType
 ): Promise<number> {
-  return db.resumeVersion.count({ where: { applicationId, type } });
+  const [row] = await db
+    .select({ count: count() })
+    .from(resumeVersions)
+    .where(and(eq(resumeVersions.applicationId, applicationId), eq(resumeVersions.type, type)));
+  return row?.count ?? 0;
 }
 
 export interface UpdateResumeVersionInput {
@@ -78,14 +87,17 @@ export interface UpdateResumeVersionInput {
  * edits (not generation). A version being edited is still the same version;
  * this does not create a new row.
  */
-export function updateResumeVersion(
+export async function updateResumeVersion(
   input: UpdateResumeVersionInput
 ): Promise<ResumeVersion> {
-  return db.resumeVersion.update({
-    where: { id: input.id },
-    data: {
+  const [version] = await db
+    .update(resumeVersions)
+    .set({
       ...(input.name ? { name: input.name } : {}),
       resumeJson: JSON.stringify(input.resume),
-    },
-  });
+      updatedAt: new Date(),
+    })
+    .where(eq(resumeVersions.id, input.id))
+    .returning();
+  return version;
 }
