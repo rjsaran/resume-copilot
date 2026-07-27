@@ -1,0 +1,60 @@
+/*
+ * Print-quality layout for the resume renderer. Only pages that render
+ * <Resume /> pull this file in (Next.js code-splits CSS per route), so
+ * these rules — including the @page at-rule — never leak into the rest of
+ * the app.
+ *
+ * @page governs the actual paper size/margins used both by a manual
+ * browser print AND by Playwright's page.pdf({ preferCSSPageSize: true }),
+ * so the exported PDF and the on-screen preview share one source of truth.
+ */
+
+@page {
+  size: A4;
+  margin: 16mm 18mm;
+}
+
+.resume-page {
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+}
+
+@media screen {
+  .resume-page {
+    margin: 24px auto;
+    padding: 16mm 18mm;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@media print {
+  .resume-page {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+}
+
+/* Page-break control -------------------------------------------------- */
+
+/* Keep a single experience/project/education entry from splitting across
+   a page break whenever the entry itself fits on one page. */
+.resume-avoid-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Never leave a section title as the last line on a page (orphan heading). */
+.resume-heading {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+/* Keep at least a few lines of a section together before/after a break. */
+.resume-section {
+  orphans: 3;
+  widows: 3;
+}
