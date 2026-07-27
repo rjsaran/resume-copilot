@@ -20,10 +20,11 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<JobAnalysis | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [cached, setCached] = useState(false);
 
   const isReady = hasApiKey && hasKnowledgeBase;
 
-  async function handleAnalyze() {
+  async function handleAnalyze(force = false) {
     if (!jobUrl || isAnalyzing || !isReady) return;
 
     setIsAnalyzing(true);
@@ -32,7 +33,9 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
     setApplicationId(null);
 
     try {
-      const res = await fetch(`/api/analyze?url=${encodeURIComponent(jobUrl)}`);
+      const params = new URLSearchParams({ url: jobUrl });
+      if (force) params.set("force", "true");
+      const res = await fetch(`/api/analyze?${params.toString()}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -42,6 +45,7 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
 
       setAnalysis(data.analysis);
       setApplicationId(data.applicationId ?? null);
+      setCached(Boolean(data.cached));
     } catch {
       setError("Failed to reach the analysis service.");
     } finally {
@@ -131,15 +135,32 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
 
         {analysis ? (
           <div className="flex flex-col gap-4">
-            {applicationId && (
-              <Link
-                href={`/applications/${applicationId}`}
-                className="flex items-center gap-1.5 self-end text-sm text-muted-foreground hover:text-foreground hover:underline"
-              >
-                Saved to your applications
-                <ArrowRight className="size-3.5" />
-              </Link>
-            )}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {cached ? (
+                <p className="text-sm text-muted-foreground">
+                  Showing your last analysis of this posting — nothing changed since then, so no
+                  AI call was made.{" "}
+                  <button
+                    type="button"
+                    onClick={() => handleAnalyze(true)}
+                    className="underline hover:text-foreground"
+                  >
+                    Re-analyze anyway
+                  </button>
+                </p>
+              ) : (
+                <span />
+              )}
+              {applicationId && (
+                <Link
+                  href={`/applications/${applicationId}`}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  Saved to your applications
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              )}
+            </div>
             <JobAnalysisDashboard analysis={analysis} />
           </div>
         ) : (

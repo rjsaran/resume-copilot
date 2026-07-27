@@ -97,6 +97,20 @@ export function TailoredResumePanel({
 
   function handleGenerate() {
     if (isGenerating) return; // guard against a double-click firing twice
+
+    // The first generation is always intentional; regenerating (which spends
+    // another AI call and adds yet another version to keep around) is easy
+    // to trigger by accident with nothing actually changed since last time,
+    // so ask before spending it.
+    if (
+      tailoredVersions.length > 0 &&
+      !window.confirm(
+        "Regenerate the tailored resume? This uses another AI call and adds a new version."
+      )
+    ) {
+      return;
+    }
+
     setError(null);
     startGenerate(async () => {
       const result = await generateTailoredResumeAction(applicationId);

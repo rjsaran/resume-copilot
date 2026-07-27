@@ -69,6 +69,109 @@ export interface CareerKnowledgeBase {
   education: EducationKnowledge[];
 }
 
+const STRING_ARRAY_SCHEMA = { type: "array", items: { type: "string" } } as const;
+
+/**
+ * JSON Schema for structured LLM output (response_format.schema) when
+ * importing a knowledge base from resume/LinkedIn text. Mirrors
+ * CareerKnowledgeBase exactly — keep the two in sync by hand, since
+ * structured output schemas can't be derived automatically from a TS type.
+ */
+export const CAREER_KNOWLEDGE_BASE_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    personal: {
+      type: "object",
+      properties: {
+        fullName: { type: "string" },
+        headline: { type: "string" },
+        email: { type: "string" },
+        phone: { type: "string" },
+        location: { type: "string" },
+        summary: { type: "string" },
+        links: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string" },
+              url: { type: "string" },
+            },
+            required: ["label", "url"],
+          },
+        },
+      },
+      required: ["fullName", "headline", "email"],
+    },
+    experience: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "Short, stable, kebab-case identifier." },
+          company: { type: "string" },
+          role: { type: "string" },
+          location: { type: "string" },
+          startDate: { type: "string" },
+          endDate: { type: "string" },
+          summary: { type: "string" },
+          achievements: STRING_ARRAY_SCHEMA,
+          technologies: STRING_ARRAY_SCHEMA,
+        },
+        required: ["id", "company", "role", "startDate", "achievements"],
+      },
+    },
+    projects: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "Short, stable, kebab-case identifier." },
+          name: { type: "string" },
+          type: { type: "string", enum: ["personal", "professional", "open-source"] },
+          role: { type: "string" },
+          description: { type: "string" },
+          highlights: STRING_ARRAY_SCHEMA,
+          technologies: STRING_ARRAY_SCHEMA,
+          url: { type: "string" },
+          startDate: { type: "string" },
+          endDate: { type: "string" },
+        },
+        required: ["id", "name", "type", "description", "highlights"],
+      },
+    },
+    technologies: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          category: { type: "string" },
+          items: STRING_ARRAY_SCHEMA,
+        },
+        required: ["category", "items"],
+      },
+    },
+    education: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "Short, stable, kebab-case identifier." },
+          institution: { type: "string" },
+          degree: { type: "string" },
+          location: { type: "string" },
+          startDate: { type: "string" },
+          endDate: { type: "string" },
+          gpa: { type: "string" },
+          notes: STRING_ARRAY_SCHEMA,
+        },
+        required: ["id", "institution", "degree"],
+      },
+    },
+  },
+  required: ["personal", "experience", "projects", "technologies", "education"],
+} as const;
+
 function isStringArrayOrUndefined(value: unknown): value is string[] | undefined {
   return value === undefined || (Array.isArray(value) && value.every((v) => typeof v === "string"));
 }

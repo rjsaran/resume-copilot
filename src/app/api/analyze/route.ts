@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { JOB_ANALYSIS_SCHEMA, isJobAnalysis } from "@/types/analysis";
-import { saveAnalysis } from "@/lib/repositories/applicationRepository";
+import { isJobAnalysis } from "@/types/analysis";
+import {
+  getApplicationByJobHash,
+  hashJobUrl,
+  saveAnalysis,
+} from "@/lib/repositories/applicationRepository";
 import { requireKnowledgeBase, KnowledgeBaseError } from "@/lib/repositories/knowledgeBaseRepository";
 import { careerKnowledgeBaseToText } from "@/lib/resume/careerKnowledgeBaseText";
 import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
+import { analyzeJob, JobAnalysisError } from "@/services/analysis/jobAnalyzer";
 import { getCurrentUser } from "@/lib/auth";
 
 const READER_BASE_URL = "https://r.jina.ai/";
@@ -17,6 +22,7 @@ export async function GET(request: NextRequest) {
   }
 
   const jobUrl = request.nextUrl.searchParams.get("url");
+  const forceReanalyze = request.nextUrl.searchParams.get("force") === "true";
 
   if (!jobUrl) {
     return NextResponse.json(
@@ -62,6 +68,35 @@ export async function GET(request: NextRequest) {
   }
 
   const jobDescription = await jobResponse.text();
+  const jobHash = hashJobUrl(parsedUrl.toString());
+
+  // Skip the LLM call entirely if this exact posting was already analyzed
+  // for this user and the scraped text hasn't changed since — the common
+  // case of re-opening or re-submitting the same URL. This is a heuristic,
+  // not a true cache: it can't detect "the knowledge base changed since
+  // last time" (pass ?force=true to bypass it deliberately), and a posting
+  // whose page injects dynamic content (ads, "posted Xh ago") on every
+  // fetch will never hit it. Still a real, free win against accidental
+  // re-analysis of unchanged postings — the thing actually metered on a
+  // free-tier LLM key.
+  if (!forceReanalyze) {
+    const existing = await getApplicationByJobHash(user.id, jobHash);
+    if (existing?.analysis && existing.analysis.jdMarkdown === jobDescription) {
+      let cachedAnalysis: unknown;
+      try {
+        cachedAnalysis = JSON.parse(existing.analysis.analysisJson);
+      } catch {
+        cachedAnalysis = null;
+      }
+      if (cachedAnalysis && isJobAnalysis(cachedAnalysis)) {
+        return NextResponse.json({
+          analysis: cachedAnalysis,
+          applicationId: existing.id,
+          cached: true,
+        });
+      }
+    }
+  }
 
   let careerHistory: string;
   try {
@@ -90,53 +125,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  let outputText: string;
+  let analysis;
   try {
-    outputText = await provider.generateStructuredJson({
-      systemInstruction:
-        "You are an engineering recruiter specialized in hiring senior backend engineers.\n\n" +
-        "Compare:\n\n" +
-        "1. Candidate Career History — a full knowledge base of every job, achievement, project, " +
-        "and skill the candidate has. It is deliberately richer than any single resume: a tailored " +
-        "resume is built later by selecting and rewording a relevant subset of it for a specific job. " +
-        "Do not assume everything here would appear verbatim on a resume.\n" +
-        "2. Job Description\n\n" +
-        "Return JSON.\n\n" +
-        "Never invent experience.\n\n" +
-        "Identify:\n\n" +
-        "- Company name and job title (extracted from the job description)\n" +
-        "- Match score\n" +
-        "- ATS score\n" +
-        "- Hard blockers\n" +
-        "- Resume wording improvements (phrase these as guidance for how a tailored resume built from this history should be worded, not as edits to the career history itself)\n" +
-        "- Missing technologies\n" +
-        "- Missing domain knowledge\n" +
-        "- Resume sections to rewrite\n" +
-        "- Interview probability\n" +
-        "- Apply / Tailor / Skip",
-      input: `# Candidate Career History\n\n${careerHistory}\n\n# Job Description\n\n${jobDescription}`,
-      schema: JOB_ANALYSIS_SCHEMA,
-    });
+    analysis = await analyzeJob({ careerHistory, jobDescription }, provider);
   } catch (error) {
-    const message = error instanceof LLMProviderError ? error.message : "Failed to reach the model.";
+    const message = error instanceof JobAnalysisError ? error.message : "Failed to reach the model.";
     return NextResponse.json({ error: message }, { status: 502 });
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(outputText);
-  } catch {
-    return NextResponse.json(
-      { error: "The model did not return valid JSON." },
-      { status: 502 }
-    );
-  }
-
-  if (!isJobAnalysis(parsed)) {
-    return NextResponse.json(
-      { error: "The model's JSON did not match the expected shape." },
-      { status: 502 }
-    );
   }
 
   let applicationId: string;
@@ -145,7 +139,7 @@ export async function GET(request: NextRequest) {
       userId: user.id,
       jobUrl: parsedUrl.toString(),
       jdMarkdown: jobDescription,
-      analysis: parsed,
+      analysis,
       model: provider.modelName,
     });
     applicationId = application.id;
@@ -156,5 +150,5 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ analysis: parsed, applicationId });
+  return NextResponse.json({ analysis, applicationId, cached: false });
 }

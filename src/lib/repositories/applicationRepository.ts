@@ -75,6 +75,18 @@ export async function saveAnalysis(input: SaveAnalysisInput): Promise<Applicatio
   });
 }
 
+/**
+ * Looks up an existing application by the same (userId, jobHash) key
+ * `saveAnalysis` dedupes on, with its analysis attached. Used to detect
+ * "this exact posting was already analyzed" before spending an LLM call.
+ */
+export function getApplicationByJobHash(userId: string, jobHash: string) {
+  return db.query.applications.findFirst({
+    where: and(eq(applications.userId, userId), eq(applications.jobHash, jobHash)),
+    with: { analysis: true },
+  });
+}
+
 export function getApplications(userId: string) {
   return db.query.applications.findMany({
     where: eq(applications.userId, userId),

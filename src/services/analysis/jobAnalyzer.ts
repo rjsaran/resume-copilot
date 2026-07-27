@@ -1,0 +1,48 @@
+import { JOB_ANALYSIS_SCHEMA, isJobAnalysis, type JobAnalysis } from "@/types/analysis";
+import {
+  buildJobAnalysisPrompt,
+  type JobAnalysisPromptInput,
+} from "@/services/analysis/prompts/jobAnalysisPrompt";
+import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
+
+export type AnalyzeJobInput = JobAnalysisPromptInput;
+
+export class JobAnalysisError extends Error {}
+
+/**
+ * Calls the user's configured LLM provider to compare a job description
+ * against their career knowledge base and return a structured match
+ * analysis. Never persists anything; that's the caller's job.
+ */
+export async function analyzeJob(
+  input: AnalyzeJobInput,
+  provider: LLMProvider
+): Promise<JobAnalysis> {
+  const prompt = buildJobAnalysisPrompt(input);
+
+  let outputText: string;
+  try {
+    outputText = await provider.generateStructuredJson({
+      systemInstruction: prompt.systemInstruction,
+      input: prompt.input,
+      schema: JOB_ANALYSIS_SCHEMA,
+    });
+  } catch (error) {
+    throw new JobAnalysisError(
+      error instanceof LLMProviderError ? error.message : "Failed to analyze the job posting."
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(outputText);
+  } catch {
+    throw new JobAnalysisError("The model did not return valid JSON.");
+  }
+
+  if (!isJobAnalysis(parsed)) {
+    throw new JobAnalysisError("The model's JSON did not match the expected shape.");
+  }
+
+  return parsed;
+}
