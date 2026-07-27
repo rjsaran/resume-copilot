@@ -136,6 +136,9 @@ export const userSettings = pgTable("user_settings", {
   encryptedClaudeKey: text("encrypted_claude_key"),
   encryptedOpenAiKey: text("encrypted_openai_key"),
   encryptedOpenRouterKey: text("encrypted_openrouter_key"),
+  // Null means "use the provider's default model" — see DEFAULT_MODEL_BY_PROVIDER.
+  geminiModel: text("gemini_model"),
+  openRouterModel: text("openrouter_model"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

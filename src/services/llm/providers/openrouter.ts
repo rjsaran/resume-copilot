@@ -1,7 +1,7 @@
 import { LLMProviderError, type LLMProvider, type StructuredJsonRequest } from "@/services/llm/types";
 import { logger, errorContext } from "@/lib/logger";
+import { OPENROUTER_MODEL } from "@/services/llm/defaultModels";
 
-export const OPENROUTER_MODEL = "openai/gpt-4o-mini";
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 interface OpenRouterChatCompletion {
@@ -42,6 +42,12 @@ export class OpenRouterProvider implements LLMProvider {
             { role: "system", content: systemInstruction },
             { role: "user", content: input },
           ],
+          // Extraction/transcription tasks want deterministic, on-task
+          // output — a high default temperature is what lets weaker
+          // (especially free-tier) models drift into repetitive filler
+          // text instead of following the schema.
+          temperature: 0.1,
+          max_tokens: 8192,
           response_format: {
             type: "json_schema",
             // Non-strict: our schemas (shared with other providers) mark

@@ -48,11 +48,8 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Career Knowledge Base</CardTitle>
-          <CardDescription>
-            Every job, project, skill, and education fact you have — the source tailored resumes
-            are built from. Edit the JSON directly and save.
-          </CardDescription>
+          <CardTitle>Edit as JSON</CardTitle>
+          <CardDescription>Edit the structured data directly, then save.</CardDescription>
         </div>
         <Button size="sm" onClick={handleSave} disabled={isSaving} className="shrink-0">
           {isSaving ? "Saving…" : "Save"}

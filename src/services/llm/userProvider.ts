@@ -41,12 +41,12 @@ export async function getUserLlmProvider(userId: string): Promise<LLMProvider> {
 
   switch (settings.activeProvider) {
     case "GEMINI":
-      return new GeminiProvider(apiKey);
+      return new GeminiProvider(apiKey, settings.geminiModel ?? undefined);
     case "CLAUDE":
       return new ClaudeProvider(apiKey);
     case "OPENAI":
       return new OpenAIProvider(apiKey);
     case "OPENROUTER":
-      return new OpenRouterProvider(apiKey);
+      return new OpenRouterProvider(apiKey, settings.openRouterModel ?? undefined);
   }
 }

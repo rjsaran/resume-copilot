@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutList, Sparkles, BookUser, KeyRound, LogOut } from "lucide-react";
+import { LayoutList, Sparkles, BookUser, Bot, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -89,8 +89,8 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
                   Knowledge Base
                 </DropdownMenuLinkItem>
                 <DropdownMenuLinkItem render={<Link href="/settings" />}>
-                  <KeyRound />
-                  API Keys
+                  <Bot />
+                  AI Settings
                 </DropdownMenuLinkItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onSignOut()}>

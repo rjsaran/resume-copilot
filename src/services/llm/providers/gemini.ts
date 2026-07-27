@@ -1,8 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { LLMProviderError, type LLMProvider, type StructuredJsonRequest } from "@/services/llm/types";
 import { logger, errorContext } from "@/lib/logger";
-
-export const GEMINI_MODEL = "gemini-3.6-flash";
+import { GEMINI_MODEL } from "@/services/llm/defaultModels";
 
 export class GeminiProvider implements LLMProvider {
   readonly modelName: string;
@@ -31,6 +30,11 @@ export class GeminiProvider implements LLMProvider {
         model: this.model,
         system_instruction: systemInstruction,
         input,
+        // Extraction/transcription tasks want deterministic, on-task
+        // output — the default temperature (~1.0) is what lets the model
+        // drift into repetitive filler text instead of finishing the
+        // extraction faithfully.
+        generation_config: { temperature: 0.1 },
         response_format: {
           type: "text",
           mime_type: "application/json",

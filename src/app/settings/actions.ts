@@ -7,6 +7,7 @@ import {
   upsertProviderKey,
   clearProviderKey,
   setActiveProvider,
+  upsertProviderModel,
 } from "@/lib/repositories/userSettingsRepository";
 import { IMPLEMENTED_PROVIDERS } from "@/services/llm/types";
 import { logger } from "@/lib/logger";
@@ -70,6 +71,26 @@ export async function removeOpenRouterKeyAction(): Promise<SettingsActionResult>
 
   await clearProviderKey(user.id, "OPENROUTER");
   log.info("OpenRouter API key removed");
+  revalidatePath("/settings");
+
+  return { success: true };
+}
+
+export async function setProviderModelAction(
+  provider: LlmProvider,
+  model: string
+): Promise<SettingsActionResult> {
+  const user = await requireUser();
+  const log = logger.child({ action: "setProviderModelAction", userId: user.id });
+
+  if (!IMPLEMENTED_PROVIDERS.includes(provider)) {
+    log.warn("Model override blocked: provider not implemented", { provider });
+    return { success: false, error: `${provider} is not available yet.` };
+  }
+
+  const trimmed = model.trim();
+  await upsertProviderModel(user.id, provider, trimmed || null);
+  log.info("Provider model updated", { provider, model: trimmed || null });
   revalidatePath("/settings");
 
   return { success: true };
