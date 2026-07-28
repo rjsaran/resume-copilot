@@ -49,8 +49,21 @@ export class OpenRouterProvider implements LLMProvider {
           // Extraction/transcription tasks want deterministic, on-task
           // output - a high default temperature is what lets weaker
           // (especially free-tier) models drift into repetitive filler
-          // text instead of following the schema.
-          temperature: 0.1,
+          // text instead of following the schema. But near-zero temperature
+          // has the opposite failure mode: greedy decoding is exactly what
+          // locks a model into a repetition loop once it starts one (seen
+          // in production on Gemini as a single field ballooning into the
+          // same few words repeated hundreds of times - the same risk
+          // applies here). frequency_penalty directly discourages repeating
+          // tokens already used, which is the more targeted tool for that
+          // specific failure mode; temperature is raised modestly too as a
+          // second lever. Neither is a proven fix - clampJobAnalysisStrings
+          // in jobAnalyzer.ts is the actual guarantee, hard-truncating every
+          // free-text field server-side regardless of what any model
+          // produces, since JSON Schema's maxLength is advisory here (via
+          // strict: false below), not an enforced constraint.
+          temperature: 0.3,
+          frequency_penalty: 0.4,
           max_tokens: 8192,
           response_format: {
             type: "json_schema",

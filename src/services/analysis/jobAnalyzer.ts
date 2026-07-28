@@ -4,6 +4,7 @@ import {
   type JobAnalysisPromptInput,
 } from "@/services/analysis/prompts/jobAnalysisPrompt";
 import { deriveFitSummary } from "@/services/analysis/deriveFitSummary";
+import { clampJobAnalysisStrings } from "@/services/analysis/clampJobAnalysisStrings";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
 import { logger } from "@/lib/logger";
 
@@ -48,8 +49,10 @@ export async function analyzeJob(
     throw new JobAnalysisError("The model's JSON did not match the expected shape.");
   }
 
+  const clamped = clampJobAnalysisStrings(parsed);
+
   return {
-    ...parsed,
-    fitSummary: deriveFitSummary(parsed.scoreBreakdown, parsed.matchScore),
+    ...clamped,
+    fitSummary: deriveFitSummary(clamped.scoreBreakdown, clamped.matchScore),
   };
 }

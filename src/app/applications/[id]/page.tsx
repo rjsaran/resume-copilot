@@ -47,7 +47,8 @@ export default async function ApplicationDetailPage({
       parsedAnalysis = null;
     }
   }
-  const analysis = parsedAnalysis && isJobAnalysis(parsedAnalysis) ? parsedAnalysis : null;
+  const analysis =
+    parsedAnalysis && isJobAnalysis(parsedAnalysis) ? parsedAnalysis : null;
 
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-16 dark:bg-black sm:px-8">
@@ -75,14 +76,17 @@ export default async function ApplicationDetailPage({
               View original posting
             </a>
           </div>
-          <StatusSelect applicationId={application.id} status={application.status} />
+          <StatusSelect
+            applicationId={application.id}
+            status={application.status}
+          />
         </div>
 
         {/* Verdict first: is this worth pursuing, and why - everything else
             on the page is either "act on it" (tailoring) or "the detail
             behind the verdict" (analysis), so it comes first. */}
         {analysis ? (
-          <HeroRecommendationCard analysis={analysis} ctaHref="#tailored-resume" />
+          <HeroRecommendationCard analysis={analysis} />
         ) : (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -96,49 +100,47 @@ export default async function ApplicationDetailPage({
         <div id="tailored-resume" className="scroll-mt-20">
           <TailoredResumePanel
             applicationId={application.id}
-            initialVersions={application.resumeVersions.reduce<ResumeVersionDTO[]>(
-              (acc, version) => {
-                try {
-                  const parsed = JSON.parse(version.resumeJson);
-                  if (isResumeData(parsed)) {
-                    acc.push({
-                      id: version.id,
-                      name: version.name,
-                      type: version.type,
-                      resume: parsed,
-                    });
-                  }
-                } catch {
-                  // Skip versions with corrupt JSON rather than crashing the page.
+            initialVersions={application.resumeVersions.reduce<
+              ResumeVersionDTO[]
+            >((acc, version) => {
+              try {
+                const parsed = JSON.parse(version.resumeJson);
+                if (isResumeData(parsed)) {
+                  acc.push({
+                    id: version.id,
+                    name: version.name,
+                    type: version.type,
+                    resume: parsed,
+                  });
                 }
-                return acc;
-              },
-              []
-            )}
+              } catch {
+                // Skip versions with corrupt JSON rather than crashing the page.
+              }
+              return acc;
+            }, [])}
           />
         </div>
 
         <div id="cover-letter" className="scroll-mt-20">
           <CoverLetterPanel
             applicationId={application.id}
-            initialVersions={application.coverLetterVersions.reduce<CoverLetterVersionDTO[]>(
-              (acc, version) => {
-                try {
-                  const parsed = JSON.parse(version.coverLetterJson);
-                  if (isCoverLetterData(parsed)) {
-                    acc.push({
-                      id: version.id,
-                      name: version.name,
-                      coverLetter: parsed,
-                    });
-                  }
-                } catch {
-                  // Skip versions with corrupt JSON rather than crashing the page.
+            initialVersions={application.coverLetterVersions.reduce<
+              CoverLetterVersionDTO[]
+            >((acc, version) => {
+              try {
+                const parsed = JSON.parse(version.coverLetterJson);
+                if (isCoverLetterData(parsed)) {
+                  acc.push({
+                    id: version.id,
+                    name: version.name,
+                    coverLetter: parsed,
+                  });
                 }
-                return acc;
-              },
-              []
-            )}
+              } catch {
+                // Skip versions with corrupt JSON rather than crashing the page.
+              }
+              return acc;
+            }, [])}
           />
         </div>
 
@@ -190,7 +192,9 @@ export default async function ApplicationDetailPage({
           </CardContent>
         </Card>
 
-        <JobDescriptionCard jdMarkdown={application.analysis?.jdMarkdown ?? null} />
+        <JobDescriptionCard
+          jdMarkdown={application.analysis?.jdMarkdown ?? null}
+        />
       </main>
     </div>
   );

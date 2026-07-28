@@ -57,17 +57,25 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
     try {
       res = await fetch(`/api/analyze?${params.toString()}`);
     } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
+      setError(
+        "Couldn't reach the server. Check your connection and try again.",
+      );
       setIsAnalyzing(false);
       return;
     }
 
-    let data: { error?: string; analysis?: JobAnalysis; applicationId?: string; jobDescription?: string; cached?: boolean };
+    let data: {
+      error?: string;
+      analysis?: JobAnalysis;
+      applicationId?: string;
+      jobDescription?: string;
+      cached?: boolean;
+    };
     try {
       data = await res.json();
     } catch {
       setError(
-        `The server returned an unexpected response (status ${res.status}). Please try again.`
+        `The server returned an unexpected response (status ${res.status}). Please try again.`,
       );
       setIsAnalyzing(false);
       return;
@@ -80,7 +88,9 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
     }
 
     if (!data.analysis) {
-      setError("The server response was missing the analysis. Please try again.");
+      setError(
+        "The server response was missing the analysis. Please try again.",
+      );
       setIsAnalyzing(false);
       return;
     }
@@ -192,14 +202,7 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
                 once, permanently, on the application page — showing it here
                 too would just be the same dashboard rendered twice a few
                 seconds apart. */}
-            <HeroRecommendationCard
-              analysis={analysis}
-              ctaHref={
-                applicationId
-                  ? `/applications/${applicationId}#tailored-resume`
-                  : "/applications"
-              }
-            />
+            <HeroRecommendationCard analysis={analysis} />
             {applicationId && (
               <Link
                 href={`/applications/${applicationId}`}

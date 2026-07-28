@@ -1,15 +1,17 @@
-import Link from "next/link";
-import { AlertTriangle, ArrowRight, MessageSquareQuote } from "lucide-react";
+import { AlertTriangle, MessageSquareQuote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RECOMMENDATION_META } from "@/lib/badge-meta";
 import type { JobAnalysis } from "@/types/analysis";
 
-const DECISION_BADGE_CLASSNAME: Record<JobAnalysis["applicationRecommendation"]["decision"], string> = {
+const DECISION_BADGE_CLASSNAME: Record<
+  JobAnalysis["applicationRecommendation"]["decision"],
+  string
+> = {
   Apply: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-  "Apply After Tailoring": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  "Apply After Tailoring":
+    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
   "Consider Applying": "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   "Probably Skip": "bg-muted text-muted-foreground",
 };
@@ -28,10 +30,8 @@ const DECISION_BADGE_CLASSNAME: Record<JobAnalysis["applicationRecommendation"][
  */
 export function HeroRecommendationCard({
   analysis,
-  ctaHref,
 }: {
   analysis: JobAnalysis;
-  ctaHref: string;
 }) {
   const meta = RECOMMENDATION_META[analysis.recommendationStatus];
   const Icon = meta.icon;
@@ -59,10 +59,19 @@ export function HeroRecommendationCard({
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5">
-            <Badge className={DECISION_BADGE_CLASSNAME[analysis.applicationRecommendation.decision]}>
+            <Badge
+              className={
+                DECISION_BADGE_CLASSNAME[
+                  analysis.applicationRecommendation.decision
+                ]
+              }
+            >
               {analysis.applicationRecommendation.decision}
             </Badge>
-            <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+            <Badge
+              variant="outline"
+              className="text-xs font-normal text-muted-foreground"
+            >
               {analysis.competitionRisk} competition
             </Badge>
           </div>
@@ -83,23 +92,15 @@ export function HeroRecommendationCard({
           <div className="flex items-start gap-2 border-t pt-4">
             <MessageSquareQuote className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div className="flex flex-col gap-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Recruiter&apos;s first read</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Recruiter&apos;s first read
+              </p>
               <blockquote className="text-sm leading-relaxed text-foreground/80 italic">
                 {analysis.recruiterFirstImpression}
               </blockquote>
             </div>
           </div>
         )}
-
-        <Button
-          size="lg"
-          className="w-fit"
-          nativeButton={false}
-          render={<Link href={ctaHref} />}
-        >
-          Generate Tailored Resume
-          <ArrowRight className="size-4" />
-        </Button>
       </CardContent>
     </Card>
   );
