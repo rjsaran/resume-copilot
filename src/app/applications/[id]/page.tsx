@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, History } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getApplication } from "@/lib/repositories/applicationRepository";
-import { JobAnalysisDashboard } from "@/components/job-analysis-dashboard";
+import { HeroRecommendationCard } from "@/components/job-analysis/HeroRecommendationCard";
+import { MatchScoreExplainer } from "@/components/job-analysis/MatchScoreExplainer";
+import { StrengthsCard } from "@/components/job-analysis/StrengthsCard";
+import { RequirementCoverage } from "@/components/job-analysis/RequirementCoverage";
 import { StatusSelect } from "@/components/status-select";
 import { TailoredResumePanel } from "@/components/tailored-resume-panel";
+import { CoverLetterPanel } from "@/components/cover-letter-panel";
 import { JobDescriptionCard } from "@/components/job-description-card";
 import {
   Card,
@@ -16,7 +20,9 @@ import {
 } from "@/components/ui/card";
 import { isJobAnalysis } from "@/types/analysis";
 import { isResumeData } from "@/types/resume";
+import { isCoverLetterData } from "@/types/coverLetter";
 import type { ResumeVersionDTO } from "@/components/tailored-resume-panel";
+import type { CoverLetterVersionDTO } from "@/components/cover-letter-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +47,7 @@ export default async function ApplicationDetailPage({
       parsedAnalysis = null;
     }
   }
+  const analysis = parsedAnalysis && isJobAnalysis(parsedAnalysis) ? parsedAnalysis : null;
 
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-16 dark:bg-black sm:px-8">
@@ -71,13 +78,11 @@ export default async function ApplicationDetailPage({
           <StatusSelect applicationId={application.id} status={application.status} />
         </div>
 
-        {parsedAnalysis && isJobAnalysis(parsedAnalysis) ? (
-          <JobAnalysisDashboard
-            analysis={parsedAnalysis}
-            tailoredResumeHref="#tailored-resume"
-            hasTailoredVersion={application.resumeVersions.some((v) => v.type === "TAILORED")}
-            applicationStatus={application.status}
-          />
+        {/* Verdict first: is this worth pursuing, and why - everything else
+            on the page is either "act on it" (tailoring) or "the detail
+            behind the verdict" (analysis), so it comes first. */}
+        {analysis ? (
+          <HeroRecommendationCard analysis={analysis} ctaHref="#tailored-resume" />
         ) : (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -86,6 +91,8 @@ export default async function ApplicationDetailPage({
           </Card>
         )}
 
+        {/* The two things you actually come back to use, right after the
+            verdict - not after scrolling past the full analysis every time. */}
         <div id="tailored-resume" className="scroll-mt-20">
           <TailoredResumePanel
             applicationId={application.id}
@@ -111,9 +118,49 @@ export default async function ApplicationDetailPage({
           />
         </div>
 
+        <div id="cover-letter" className="scroll-mt-20">
+          <CoverLetterPanel
+            applicationId={application.id}
+            initialVersions={application.coverLetterVersions.reduce<CoverLetterVersionDTO[]>(
+              (acc, version) => {
+                try {
+                  const parsed = JSON.parse(version.coverLetterJson);
+                  if (isCoverLetterData(parsed)) {
+                    acc.push({
+                      id: version.id,
+                      name: version.name,
+                      coverLetter: parsed,
+                    });
+                  }
+                } catch {
+                  // Skip versions with corrupt JSON rather than crashing the page.
+                }
+                return acc;
+              },
+              []
+            )}
+          />
+        </div>
+
+        {/* Everything below is reference material behind the verdict above:
+            quantitative score, then a quick scan of strengths, then the
+            single requirement-by-requirement checklist (covered items plus
+            full reasoning on anything missing/partial) - skim-first,
+            dig-in-if-needed, each requirement shown exactly once. */}
+        {analysis && (
+          <>
+            <MatchScoreExplainer analysis={analysis} />
+            <StrengthsCard strengths={analysis.strengths} />
+            <RequirementCoverage coverage={analysis.coverage} />
+          </>
+        )}
+
         <Card>
           <CardHeader>
-            <CardTitle>Outcomes</CardTitle>
+            <div className="flex items-center gap-2">
+              <History className="size-4 text-muted-foreground" />
+              <CardTitle>Outcomes</CardTitle>
+            </div>
             <CardDescription>
               Timeline of what happened with this application.
             </CardDescription>

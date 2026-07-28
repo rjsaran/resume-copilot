@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   analyses,
   applications,
+  coverLetterVersions,
   outcomes,
   resumeVersions,
 } from "@/lib/db/schema";
@@ -33,9 +34,7 @@ export async function saveAnalysis(
   input: SaveAnalysisInput,
 ): Promise<Application> {
   const jobHash = hashJobUrl(input.jobUrl);
-  const { company, jobTitle, matchScore, applicationRecommendation, recommendationStatus } =
-    input.analysis;
-  const applicationDecision = applicationRecommendation.decision;
+  const { company, jobTitle, matchScore, recommendationStatus } = input.analysis;
   const analysisJson = JSON.stringify(input.analysis);
 
   return db.transaction(async (tx) => {
@@ -48,7 +47,6 @@ export async function saveAnalysis(
         jobUrl: input.jobUrl,
         jobHash,
         overallScore: matchScore,
-        applicationDecision,
         verdict: recommendationStatus,
       })
       .onConflictDoUpdate({
@@ -57,7 +55,6 @@ export async function saveAnalysis(
           company,
           jobTitle,
           overallScore: matchScore,
-          applicationDecision,
           verdict: recommendationStatus,
           updatedAt: new Date(),
         },
@@ -109,6 +106,7 @@ export function getApplication(id: string, userId: string) {
     with: {
       analysis: true,
       resumeVersions: { orderBy: [desc(resumeVersions.createdAt)] },
+      coverLetterVersions: { orderBy: [desc(coverLetterVersions.createdAt)] },
       outcomes: { orderBy: [desc(outcomes.createdAt)] },
     },
   });

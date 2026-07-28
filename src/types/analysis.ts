@@ -8,7 +8,6 @@ export type RecommendationStatus =
 export type GapCategory = "technology" | "domain";
 export type GapSeverity = "high" | "medium" | "low";
 export type CoverageStatus = "covered" | "partial" | "missing";
-export type QuickWinImpact = "High" | "Medium" | "Low";
 export type ApplicationDecision = "Apply" | "Apply After Tailoring" | "Consider Applying" | "Probably Skip";
 export type CompetitionRiskLevel = "Low" | "Medium" | "High";
 export type FitLevel = "Excellent" | "Good" | "Fair" | "Poor";
@@ -20,20 +19,24 @@ export interface Strength {
   evidence: string[];
 }
 
-export interface Gap {
-  title: string;
-  category: GapCategory;
-  severity: GapSeverity;
-  whyItMatters: string;
-  /** Why this gap was identified, grounded in the career history (what's present or absent). */
-  reason: string;
-  aiCanFix: boolean;
-  aiFixNote: string;
-}
-
+/**
+ * One row per requirement in the job description. "covered" entries only
+ * need requirement+status; the rest of the fields carry the "why" and are
+ * only meaningful (and only ever populated) for "partial"/"missing" — this
+ * is deliberately the single source of truth for a requirement's status AND
+ * its reasoning, replacing what used to be two separately-generated arrays
+ * (coverage + gaps) that inevitably drifted apart in naming and content.
+ */
 export interface CoverageItem {
   requirement: string;
   status: CoverageStatus;
+  category?: GapCategory;
+  severity?: GapSeverity;
+  whyItMatters?: string;
+  /** Why this status was assigned, grounded in the career history (what's present or absent). */
+  reason?: string;
+  aiCanFix?: boolean;
+  aiFixNote?: string;
 }
 
 /**
@@ -61,13 +64,6 @@ export interface FitSummary {
   overall: OverallFitLevel;
 }
 
-export interface QuickWin {
-  title: string;
-  impact: QuickWinImpact;
-  /** Rough time estimate, e.g. "5 min". */
-  effort: string;
-}
-
 /**
  * The plain-English "what should I do" call — derived only from how well the
  * resume fits the job, never from a prediction of interview/hiring odds.
@@ -88,12 +84,20 @@ export interface JobAnalysis {
   competitionRisk: CompetitionRiskLevel;
   summary: string;
   strengths: Strength[];
-  gaps: Gap[];
   hardBlockers: string[];
   coverage: CoverageItem[];
-  quickWins: QuickWin[];
   recruiterFirstImpression: string;
 }
+
+/**
+ * What the LLM actually returns — everything in JobAnalysis except
+ * fitSummary, which is derived deterministically from scoreBreakdown/
+ * matchScore in code (see deriveFitSummary) rather than asked of the model.
+ * Two independently-generated fields (a numeric score and a qualitative
+ * label meant to describe it) can disagree — e.g. matchScore: 0 with
+ * fitSummary.overall: "Excellent Fit" — so only one is a source of truth.
+ */
+export type ModelJobAnalysis = Omit<JobAnalysis, "fitSummary">;
 
 const STRENGTH_SCHEMA = {
   type: "object",
@@ -115,43 +119,6 @@ const STRENGTH_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const GAP_SCHEMA = {
-  type: "object",
-  properties: {
-    title: {
-      type: "string",
-      maxLength: 40,
-      description: 'The missing or weak technology or domain-knowledge item, name only (e.g. "Kubernetes").',
-    },
-    category: { type: "string", enum: ["technology", "domain"] },
-    severity: { type: "string", enum: ["high", "medium", "low"] },
-    whyItMatters: {
-      type: "string",
-      maxLength: 100,
-      description: "One short sentence on why the job posting cares about this.",
-    },
-    reason: {
-      type: "string",
-      maxLength: 140,
-      description:
-        'Why this gap was identified, grounded in the career history — cite what is present or absent (e.g. "Career history shows production Python but no production Go experience.").',
-    },
-    aiCanFix: {
-      type: "boolean",
-      description:
-        'Whether resume wording/reframing can meaningfully address this. Default to false for missing production experience in a primary/required technology — wording cannot create experience that was never demonstrated, even when transferable experience exists elsewhere (see the Python -> Go example in the instructions).',
-    },
-    aiFixNote: {
-      type: "string",
-      maxLength: 140,
-      description:
-        "One sentence explaining the aiCanFix judgment — how tailoring would help (e.g. surfacing transferable experience more prominently), or why it can't (a real experience gap, not a wording problem).",
-    },
-  },
-  required: ["title", "category", "severity", "whyItMatters", "reason", "aiCanFix", "aiFixNote"],
-  additionalProperties: false,
-} as const;
-
 const COVERAGE_ITEM_SCHEMA = {
   type: "object",
   properties: {
@@ -161,6 +128,39 @@ const COVERAGE_ITEM_SCHEMA = {
       description: 'A single requirement pulled from the job description, name only (e.g. "Kafka", "PCI DSS").',
     },
     status: { type: "string", enum: ["covered", "partial", "missing"] },
+    category: {
+      type: "string",
+      enum: ["technology", "domain"],
+      description: 'Only set for status "partial" or "missing" — omit entirely for "covered".',
+    },
+    severity: {
+      type: "string",
+      enum: ["high", "medium", "low"],
+      description: 'Only set for status "partial" or "missing" — omit entirely for "covered".',
+    },
+    whyItMatters: {
+      type: "string",
+      maxLength: 100,
+      description:
+        'Only set for status "partial" or "missing": one short sentence on why the job posting cares about this requirement. Omit entirely for "covered".',
+    },
+    reason: {
+      type: "string",
+      maxLength: 140,
+      description:
+        'Only set for status "partial" or "missing": why this status was assigned, grounded in the career history — cite what is present or absent (e.g. "Career history shows production Python but no production Go experience."). Omit entirely for "covered".',
+    },
+    aiCanFix: {
+      type: "boolean",
+      description:
+        'Only set for status "partial" or "missing": whether resume wording/reframing can meaningfully address this. Default to false for missing production experience in a primary/required technology — wording cannot create experience that was never demonstrated, even when transferable experience exists elsewhere (see the Python -> Go example in the instructions). Omit entirely for "covered".',
+    },
+    aiFixNote: {
+      type: "string",
+      maxLength: 140,
+      description:
+        'Only set for status "partial" or "missing": one sentence explaining the aiCanFix judgment — how tailoring would help, or why it can\'t. Omit entirely for "covered".',
+    },
   },
   required: ["requirement", "status"],
   additionalProperties: false,
@@ -198,44 +198,6 @@ const SCORE_BREAKDOWN_SCHEMA = {
     },
   },
   required: ["domain", "responsibilities", "seniority", "technology", "leadership", "culture"],
-  additionalProperties: false,
-} as const;
-
-const FIT_LEVEL_ENUM = ["Excellent", "Good", "Fair", "Poor"] as const;
-
-const FIT_SUMMARY_SCHEMA = {
-  type: "object",
-  properties: {
-    domain: { type: "string", enum: FIT_LEVEL_ENUM },
-    responsibilities: { type: "string", enum: FIT_LEVEL_ENUM },
-    seniority: { type: "string", enum: FIT_LEVEL_ENUM },
-    technology: { type: "string", enum: FIT_LEVEL_ENUM },
-    leadership: { type: "string", enum: FIT_LEVEL_ENUM },
-    culture: { type: "string", enum: FIT_LEVEL_ENUM },
-    overall: { type: "string", enum: ["Excellent Fit", "Good Fit", "Fair Fit", "Poor Fit"] },
-  },
-  required: ["domain", "responsibilities", "seniority", "technology", "leadership", "culture", "overall"],
-  additionalProperties: false,
-  description:
-    "A qualitative label for each scoreBreakdown dimension (and an overall label) so it's obvious at a glance why the candidate scored well or poorly — must agree with the numeric scoreBreakdown values.",
-} as const;
-
-const QUICK_WIN_SCHEMA = {
-  type: "object",
-  properties: {
-    title: {
-      type: "string",
-      maxLength: 60,
-      description: 'A single, concrete resume edit (e.g. "Move AI tooling experience into Summary").',
-    },
-    impact: { type: "string", enum: ["High", "Medium", "Low"] },
-    effort: {
-      type: "string",
-      maxLength: 20,
-      description: 'Rough time estimate, e.g. "5 min".',
-    },
-  },
-  required: ["title", "impact", "effort"],
   additionalProperties: false,
 } as const;
 
@@ -280,7 +242,6 @@ export const JOB_ANALYSIS_SCHEMA = {
       description:
         "The dimensions matchScore is derived from — domain, responsibilities, seniority, technology, leadership, culture, each 0-100.",
     },
-    fitSummary: FIT_SUMMARY_SCHEMA,
     recommendationStatus: {
       type: "string",
       enum: ["Strong Match", "Good Match", "Tailor Required", "Weak Match", "Not Recommended"],
@@ -307,13 +268,6 @@ export const JOB_ANALYSIS_SCHEMA = {
       description:
         "The candidate's strongest, most relevant selling points for this specific role, each backed by evidence from the career history. At most 6.",
     },
-    gaps: {
-      type: "array",
-      items: GAP_SCHEMA,
-      maxItems: 6,
-      description:
-        "Missing or weak technologies/domain knowledge, each with severity, evidence-grounded reason, and whether tailoring can help. Merge overlapping or near-duplicate gaps into a single entry (e.g. don't list \"Kubernetes\" and \"container orchestration\" separately if they refer to the same missing skill) — each entry must be a genuinely distinct issue. At most 6, sorted by severity (high first).",
-    },
     hardBlockers: {
       type: "array",
       items: { type: "string", maxLength: 100 },
@@ -324,16 +278,8 @@ export const JOB_ANALYSIS_SCHEMA = {
     coverage: {
       type: "array",
       items: COVERAGE_ITEM_SCHEMA,
-      maxItems: 15,
       description:
-        "Every distinct requirement identified in the job description (technology, domain, responsibility, or qualification), each marked covered/partial/missing against the career history. Merge requirements that overlap or restate each other (e.g. don't list \"AWS\" and \"cloud experience\" as two entries when the JD is asking about one thing) into a single entry. A technology appearing only in a skills list, with no demonstrated production use, is at most partial — never covered on keyword presence alone. At most 15, typically 6-12.",
-    },
-    quickWins: {
-      type: "array",
-      items: QUICK_WIN_SCHEMA,
-      maxItems: 5,
-      description:
-        "The highest-ROI resume wording/structure edits for this job, ranked by impact. Each must be traceable to a specific fact already present in the Candidate Career History — never generic resume advice (e.g. \"add more metrics\", \"use stronger verbs\") that isn't tied to something concrete this candidate actually has. At most 5.",
+        'Every distinct requirement identified in the job description (technology, domain, responsibility, or qualification), each marked covered/partial/missing against the career history. Merge requirements that overlap or restate each other (e.g. don\'t list "AWS" and "cloud experience" as two entries when the JD is asking about one thing) into a single entry. A technology appearing only in a skills list, with no demonstrated production use, is at most partial — never covered on keyword presence alone. List every distinct requirement — do not cap or trim the list. For every entry with status "partial" or "missing", also set category, severity, whyItMatters, reason, aiCanFix, and aiFixNote — "covered" entries need only requirement and status.',
     },
     recruiterFirstImpression: {
       type: "string",
@@ -347,16 +293,13 @@ export const JOB_ANALYSIS_SCHEMA = {
     "jobTitle",
     "matchScore",
     "scoreBreakdown",
-    "fitSummary",
     "recommendationStatus",
     "applicationRecommendation",
     "competitionRisk",
     "summary",
     "strengths",
-    "gaps",
     "hardBlockers",
     "coverage",
-    "quickWins",
     "recruiterFirstImpression",
   ],
   additionalProperties: false,
@@ -376,26 +319,18 @@ function isStrength(value: unknown): value is Strength {
   return typeof v.title === "string" && isStringArray(v.evidence);
 }
 
-function isGap(value: unknown): value is Gap {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.title === "string" &&
-    (v.category === "technology" || v.category === "domain") &&
-    (v.severity === "high" || v.severity === "medium" || v.severity === "low") &&
-    typeof v.whyItMatters === "string" &&
-    typeof v.reason === "string" &&
-    typeof v.aiCanFix === "boolean" &&
-    typeof v.aiFixNote === "string"
-  );
-}
-
 function isCoverageItem(value: unknown): value is CoverageItem {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
     typeof v.requirement === "string" &&
-    (v.status === "covered" || v.status === "partial" || v.status === "missing")
+    (v.status === "covered" || v.status === "partial" || v.status === "missing") &&
+    (v.category === undefined || v.category === "technology" || v.category === "domain") &&
+    (v.severity === undefined || v.severity === "high" || v.severity === "medium" || v.severity === "low") &&
+    (v.whyItMatters === undefined || typeof v.whyItMatters === "string") &&
+    (v.reason === undefined || typeof v.reason === "string") &&
+    (v.aiCanFix === undefined || typeof v.aiCanFix === "boolean") &&
+    (v.aiFixNote === undefined || typeof v.aiFixNote === "string")
   );
 }
 
@@ -429,16 +364,6 @@ function isFitSummary(value: unknown): value is FitSummary {
   );
 }
 
-function isQuickWin(value: unknown): value is QuickWin {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.title === "string" &&
-    (v.impact === "High" || v.impact === "Medium" || v.impact === "Low") &&
-    typeof v.effort === "string"
-  );
-}
-
 function isApplicationRecommendation(value: unknown): value is ApplicationRecommendation {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -463,15 +388,12 @@ export function isRecommendationStatus(value: string): value is RecommendationSt
   return (RECOMMENDATION_STATUSES as string[]).includes(value);
 }
 
-export function isJobAnalysis(value: unknown): value is JobAnalysis {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
+function isModelJobAnalysisShape(v: Record<string, unknown>): boolean {
   return (
     typeof v.company === "string" &&
     typeof v.jobTitle === "string" &&
     typeof v.matchScore === "number" &&
     isScoreBreakdown(v.scoreBreakdown) &&
-    isFitSummary(v.fitSummary) &&
     typeof v.recommendationStatus === "string" &&
     isRecommendationStatus(v.recommendationStatus) &&
     isApplicationRecommendation(v.applicationRecommendation) &&
@@ -479,13 +401,22 @@ export function isJobAnalysis(value: unknown): value is JobAnalysis {
     typeof v.summary === "string" &&
     Array.isArray(v.strengths) &&
     v.strengths.every(isStrength) &&
-    Array.isArray(v.gaps) &&
-    v.gaps.every(isGap) &&
     isStringArray(v.hardBlockers) &&
     Array.isArray(v.coverage) &&
     v.coverage.every(isCoverageItem) &&
-    Array.isArray(v.quickWins) &&
-    v.quickWins.every(isQuickWin) &&
     typeof v.recruiterFirstImpression === "string"
   );
+}
+
+/** Validates the LLM's raw output — before fitSummary has been derived and attached. */
+export function isModelJobAnalysis(value: unknown): value is ModelJobAnalysis {
+  if (typeof value !== "object" || value === null) return false;
+  return isModelJobAnalysisShape(value as Record<string, unknown>);
+}
+
+/** Validates a full analysis, including the derived fitSummary — used when reading persisted/cached data back. */
+export function isJobAnalysis(value: unknown): value is JobAnalysis {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return isModelJobAnalysisShape(v) && isFitSummary(v.fitSummary);
 }

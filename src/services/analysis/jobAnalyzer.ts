@@ -1,8 +1,9 @@
-import { JOB_ANALYSIS_SCHEMA, isJobAnalysis, type JobAnalysis } from "@/types/analysis";
+import { JOB_ANALYSIS_SCHEMA, isModelJobAnalysis, type JobAnalysis } from "@/types/analysis";
 import {
   buildJobAnalysisPrompt,
   type JobAnalysisPromptInput,
 } from "@/services/analysis/prompts/jobAnalysisPrompt";
+import { deriveFitSummary } from "@/services/analysis/deriveFitSummary";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
 import { logger } from "@/lib/logger";
 
@@ -42,10 +43,13 @@ export async function analyzeJob(
     throw new JobAnalysisError("The model did not return valid JSON.");
   }
 
-  if (!isJobAnalysis(parsed)) {
+  if (!isModelJobAnalysis(parsed)) {
     logger.warn("Job analysis: model JSON did not match expected shape", { module: "jobAnalyzer" });
     throw new JobAnalysisError("The model's JSON did not match the expected shape.");
   }
 
-  return parsed;
+  return {
+    ...parsed,
+    fitSummary: deriveFitSummary(parsed.scoreBreakdown, parsed.matchScore),
+  };
 }

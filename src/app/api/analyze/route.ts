@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           analysis: cachedAnalysis,
           applicationId: existing.id,
+          jobDescription,
           cached: true,
         });
       }
@@ -187,5 +188,5 @@ export async function GET(request: NextRequest) {
     matchScore: analysis.matchScore,
   });
 
-  return NextResponse.json({ analysis, applicationId, cached: false });
+  return NextResponse.json({ analysis, applicationId, jobDescription, cached: false });
 }

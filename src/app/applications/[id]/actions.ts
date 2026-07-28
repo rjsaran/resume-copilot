@@ -20,6 +20,16 @@ import {
   ResumeTailorError,
 } from "@/services/resume/resumeTailor";
 import {
+  countCoverLetterVersions,
+  createCoverLetterVersion,
+  getCoverLetterVersion,
+  updateCoverLetterVersion,
+} from "@/lib/repositories/coverLetterRepository";
+import {
+  generateCoverLetter,
+  CoverLetterGeneratorError,
+} from "@/services/coverLetter/coverLetterGenerator";
+import {
   requireKnowledgeBase,
   KnowledgeBaseError,
 } from "@/lib/repositories/knowledgeBaseRepository";
@@ -28,7 +38,12 @@ import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
 import { isJobAnalysis } from "@/types/analysis";
 import { isResumeData, type ResumeData } from "@/types/resume";
-import type { ApplicationStatus, ResumeVersion } from "@/lib/db/schema";
+import { isCoverLetterData, type CoverLetterData } from "@/types/coverLetter";
+import type {
+  ApplicationStatus,
+  CoverLetterVersion,
+  ResumeVersion,
+} from "@/lib/db/schema";
 import { logger, errorContext } from "@/lib/logger";
 
 export async function updateApplicationStatusAction(
@@ -265,4 +280,192 @@ export async function updateResumeVersionAction(
   revalidatePath(`/applications/${applicationId}`);
 
   return { success: true, resumeVersion };
+}
+
+export interface GenerateCoverLetterResult {
+  success: boolean;
+  error?: string;
+  coverLetterVersion?: CoverLetterVersion;
+}
+
+/**
+ * Generates a new cover letter version for an application:
+ *
+ *   Career Knowledge Base (full JSON, per user)
+ *     + Job Description + Analysis JSON
+ *   -> user's LLM provider writes a tailored letter -> cover_letter.json -> new CoverLetterVersion row
+ *
+ * The model only ever sees/produces CoverLetterData JSON - never Markdown or
+ * HTML. Always creates a new version; never overwrites a previous one.
+ * Unlike resumes, there is no MASTER snapshot - a cover letter has no
+ * untailored baseline to diff against.
+ */
+export async function generateCoverLetterAction(
+  applicationId: string,
+): Promise<GenerateCoverLetterResult> {
+  const user = await requireUser();
+  const log = logger.child({
+    action: "generateCoverLetterAction",
+    userId: user.id,
+    applicationId,
+  });
+  const startedAt = Date.now();
+
+  const application = await getApplication(applicationId, user.id);
+
+  if (!application) {
+    log.warn("Cover letter generation blocked: application not found");
+    return { success: false, error: "Application not found." };
+  }
+
+  if (!application.analysis) {
+    log.warn("Cover letter generation blocked: no analysis for application");
+    return { success: false, error: "No analysis found for this application." };
+  }
+
+  let analysisData: unknown;
+  try {
+    analysisData = JSON.parse(application.analysis.analysisJson);
+  } catch {
+    log.error("Cover letter generation blocked: stored analysis JSON is invalid");
+    return { success: false, error: "Stored analysis JSON is invalid." };
+  }
+
+  if (!isJobAnalysis(analysisData)) {
+    log.error(
+      "Cover letter generation blocked: stored analysis JSON did not match expected shape",
+    );
+    return {
+      success: false,
+      error: "Stored analysis JSON did not match the expected shape.",
+    };
+  }
+
+  let careerKnowledgeBase;
+  try {
+    careerKnowledgeBase = await requireKnowledgeBase(user.id);
+  } catch (error) {
+    log.warn(
+      "Cover letter generation blocked: no knowledge base",
+      errorContext(error),
+    );
+    return {
+      success: false,
+      error:
+        error instanceof KnowledgeBaseError
+          ? error.message
+          : "Failed to load your career knowledge base.",
+    };
+  }
+
+  let provider;
+  try {
+    provider = await getUserLlmProvider(user.id);
+  } catch (error) {
+    log.warn(
+      "Cover letter generation blocked: no LLM provider configured",
+      errorContext(error),
+    );
+    return {
+      success: false,
+      error:
+        error instanceof LLMProviderError
+          ? error.message
+          : "No LLM provider configured.",
+    };
+  }
+
+  let coverLetter: CoverLetterData;
+  try {
+    coverLetter = await generateCoverLetter(
+      {
+        careerKnowledgeBase,
+        jobDescription: application.analysis.jdMarkdown,
+        analysis: analysisData,
+        company: application.company,
+        jobTitle: application.jobTitle,
+      },
+      provider,
+    );
+  } catch (error) {
+    log.error("Cover letter generation failed", {
+      ...errorContext(error),
+      durationMs: Date.now() - startedAt,
+    });
+    return {
+      success: false,
+      error:
+        error instanceof CoverLetterGeneratorError
+          ? error.message
+          : "Failed to generate cover letter.",
+    };
+  }
+
+  const existingCount = await countCoverLetterVersions(applicationId);
+  const coverLetterVersion = await createCoverLetterVersion({
+    applicationId,
+    name: `Cover Letter v${existingCount + 1}`,
+    coverLetter,
+  });
+
+  log.info("Cover letter generated", {
+    coverLetterVersionId: coverLetterVersion.id,
+    durationMs: Date.now() - startedAt,
+  });
+
+  revalidatePath(`/applications/${applicationId}`);
+
+  return { success: true, coverLetterVersion };
+}
+
+export interface UpdateCoverLetterVersionResult {
+  success: boolean;
+  error?: string;
+  coverLetterVersion?: CoverLetterVersion;
+}
+
+/**
+ * Persists a direct user edit to a cover letter version's content. Mutates
+ * that version in place (it is not a new generation), and the preview
+ * reflects the edit immediately on the client before this even resolves.
+ */
+export async function updateCoverLetterVersionAction(
+  applicationId: string,
+  versionId: string,
+  coverLetter: CoverLetterData,
+): Promise<UpdateCoverLetterVersionResult> {
+  const user = await requireUser();
+  const log = logger.child({
+    action: "updateCoverLetterVersionAction",
+    userId: user.id,
+    applicationId,
+    versionId,
+  });
+
+  const existing = await getCoverLetterVersion(versionId);
+  if (!existing || existing.application.userId !== user.id) {
+    log.warn(
+      "Cover letter version edit blocked: version not found or not owned by user",
+    );
+    return { success: false, error: "Cover letter version not found." };
+  }
+
+  if (!isCoverLetterData(coverLetter)) {
+    log.warn(
+      "Cover letter version edit blocked: payload did not match expected shape",
+    );
+    return {
+      success: false,
+      error: "Cover letter data did not match the expected shape.",
+    };
+  }
+
+  const coverLetterVersion = await updateCoverLetterVersion({
+    id: versionId,
+    coverLetter,
+  });
+  log.info("Cover letter version edited");
+  revalidatePath(`/applications/${applicationId}`);
+
+  return { success: true, coverLetterVersion };
 }

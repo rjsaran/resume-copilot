@@ -45,10 +45,6 @@ export const applications = pgTable(
     jobHash: text("job_hash").notNull(),
     status: applicationStatusEnum("status").notNull().default("ANALYZED"),
     overallScore: integer("overall_score").notNull(),
-    // "Apply" | "Apply After Tailoring" | "Consider Applying" | "Probably Skip"
-    // (analysis.applicationRecommendation.decision). Kept purely for
-    // reference; nothing currently sorts/filters on this column.
-    applicationDecision: text("application_decision").notNull(),
     verdict: text("verdict").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -70,6 +66,7 @@ export const applicationsRelations = relations(
       references: [analyses.applicationId],
     }),
     resumeVersions: many(resumeVersions),
+    coverLetterVersions: many(coverLetterVersions),
     outcomes: many(outcomes),
   }),
 );
@@ -119,6 +116,40 @@ export const resumeVersionsRelations = relations(resumeVersions, ({ one }) => ({
     references: [applications.id],
   }),
 }));
+
+/**
+ * Unlike resume_versions, there is no MASTER/TAILORED distinction here - a
+ * cover letter only ever exists tailored to one specific application, so
+ * every row is equivalent in kind and differs only by generation/edit.
+ */
+export const coverLetterVersions = pgTable(
+  "cover_letter_versions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    applicationId: varchar("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    coverLetterJson: text("cover_letter_json").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("cover_letter_versions_application_id").on(table.applicationId),
+  ],
+);
+
+export const coverLetterVersionsRelations = relations(
+  coverLetterVersions,
+  ({ one }) => ({
+    application: one(applications, {
+      fields: [coverLetterVersions.applicationId],
+      references: [applications.id],
+    }),
+  }),
+);
 
 export const outcomes = pgTable(
   "outcomes",
@@ -188,6 +219,7 @@ export type ApplicationStatus = Application["status"];
 export type Analysis = typeof analyses.$inferSelect;
 export type ResumeVersion = typeof resumeVersions.$inferSelect;
 export type ResumeVersionType = ResumeVersion["type"];
+export type CoverLetterVersion = typeof coverLetterVersions.$inferSelect;
 export type Outcome = typeof outcomes.$inferSelect;
 export type UserSettings = typeof userSettings.$inferSelect;
 export type LlmProvider = UserSettings["activeProvider"];

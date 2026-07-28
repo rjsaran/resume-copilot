@@ -1,0 +1,39 @@
+/*
+ * Print-quality layout for the cover letter renderer. Only pages that render
+ * <CoverLetter /> pull this file in (Next.js code-splits CSS per route), so
+ * these rules - including the @page at-rule - never leak into the rest of
+ * the app.
+ *
+ * @page governs the actual paper size/margins used both by a manual browser
+ * print AND by Playwright's page.pdf({ preferCSSPageSize: true }), so the
+ * exported PDF and the on-screen preview share one source of truth.
+ */
+
+@page {
+  size: A4;
+  margin: 22mm 24mm;
+}
+
+.cover-letter-page {
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+}
+
+@media screen {
+  .cover-letter-page {
+    margin: 24px auto;
+    padding: 22mm 24mm;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@media print {
+  .cover-letter-page {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+}

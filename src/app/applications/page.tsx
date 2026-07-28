@@ -58,11 +58,11 @@ export default async function ApplicationsPage() {
                 </TableHeader>
                 <TableBody>
                   {applications.map((application) => (
-                    <TableRow key={application.id}>
+                    <TableRow key={application.id} className="relative">
                       <TableCell className="font-medium">
                         <Link
                           href={`/applications/${application.id}`}
-                          className="hover:underline"
+                          className="after:absolute after:inset-0 after:content-[''] hover:underline"
                         >
                           {application.company}
                         </Link>

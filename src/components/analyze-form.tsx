@@ -13,7 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { JobAnalysisDashboard } from "@/components/job-analysis-dashboard";
+import { HeroRecommendationCard } from "@/components/job-analysis/HeroRecommendationCard";
+import { JobDescriptionCard } from "@/components/job-description-card";
 import type { JobAnalysis } from "@/types/analysis";
 
 interface AnalyzeFormProps {
@@ -27,6 +28,7 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<JobAnalysis | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [jobDescription, setJobDescription] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
 
   const isReady = hasApiKey && hasKnowledgeBase;
@@ -38,6 +40,7 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
     setError(null);
     setAnalysis(null);
     setApplicationId(null);
+    setJobDescription(null);
 
     try {
       const params = new URLSearchParams({ url: jobUrl });
@@ -52,6 +55,7 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
 
       setAnalysis(data.analysis);
       setApplicationId(data.applicationId ?? null);
+      setJobDescription(data.jobDescription ?? null);
       setCached(Boolean(data.cached));
     } catch {
       setError("Failed to reach the analysis service.");
@@ -142,42 +146,42 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
 
         {analysis ? (
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              {cached ? (
-                <p className="text-sm text-muted-foreground">
-                  Showing your last analysis of this posting - nothing changed
-                  since then, so no AI call was made.{" "}
-                  <button
-                    type="button"
-                    onClick={() => handleAnalyze(true)}
-                    className="underline hover:text-foreground"
-                  >
-                    Re-analyze anyway
-                  </button>
-                </p>
-              ) : (
-                <span />
-              )}
-              {applicationId && (
-                <Link
-                  href={`/applications/${applicationId}`}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline"
+            {cached && (
+              <p className="text-sm text-muted-foreground">
+                Showing your last analysis of this posting - nothing changed
+                since then, so no AI call was made.{" "}
+                <button
+                  type="button"
+                  onClick={() => handleAnalyze(true)}
+                  className="underline hover:text-foreground"
                 >
-                  Saved to your applications
-                  <ArrowRight className="size-3.5" />
-                </Link>
-              )}
-            </div>
-            <JobAnalysisDashboard
+                  Re-analyze anyway
+                </button>
+              </p>
+            )}
+            {/* Condensed on purpose: the full breakdown (score dimensions,
+                coverage, gap-by-gap detail, quick wins, recruiter notes) lives
+                once, permanently, on the application page — showing it here
+                too would just be the same dashboard rendered twice a few
+                seconds apart. */}
+            <HeroRecommendationCard
               analysis={analysis}
-              tailoredResumeHref={
+              ctaHref={
                 applicationId
                   ? `/applications/${applicationId}#tailored-resume`
                   : "/applications"
               }
-              hasTailoredVersion={false}
-              applicationStatus="ANALYZED"
             />
+            {applicationId && (
+              <Link
+                href={`/applications/${applicationId}`}
+                className="flex items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground hover:underline"
+              >
+                View full analysis, requirement coverage, and gaps
+                <ArrowRight className="size-3.5" />
+              </Link>
+            )}
+            <JobDescriptionCard jdMarkdown={jobDescription} />
           </div>
         ) : (
           <Card>
