@@ -175,6 +175,37 @@ export const outcomesRelations = relations(outcomes, ({ one }) => ({
 }));
 
 /**
+ * One row per (user, job posting) - the raw scraped text, saved the moment
+ * it's fetched, independent of whether the LLM analysis step that follows
+ * succeeds. Without this, a scrape that costs a real network round-trip to
+ * Jina got thrown away on every LLM failure (rate limit, bad key, provider
+ * outage) with nothing to show for it. `applications`/`analyses` still only
+ * ever hold a *completed* analysis - company/jobTitle/scores don't exist
+ * until the LLM has run, so this can't just be an early, partial insert
+ * into those tables.
+ */
+export const scrapedJobDescriptions = pgTable(
+  "scraped_job_descriptions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: text("user_id").notNull(),
+    jobUrl: text("job_url").notNull(),
+    jobHash: text("job_hash").notNull(),
+    jdMarkdown: text("jd_markdown").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("scraped_job_descriptions_user_id_job_hash").on(
+      table.userId,
+      table.jobHash,
+    ),
+  ],
+);
+
+/**
  * One row per Supabase-authenticated user. userId is the Supabase auth
  * user's UUID (auth.users.id) - stored as a plain string since Supabase
  * Auth and this app's data live in separate Postgres databases (Neon vs
@@ -221,6 +252,7 @@ export type ResumeVersion = typeof resumeVersions.$inferSelect;
 export type ResumeVersionType = ResumeVersion["type"];
 export type CoverLetterVersion = typeof coverLetterVersions.$inferSelect;
 export type Outcome = typeof outcomes.$inferSelect;
+export type ScrapedJobDescription = typeof scrapedJobDescriptions.$inferSelect;
 export type UserSettings = typeof userSettings.$inferSelect;
 export type LlmProvider = UserSettings["activeProvider"];
 export type KnowledgeBaseRow = typeof knowledgeBases.$inferSelect;

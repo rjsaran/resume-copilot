@@ -42,26 +42,54 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
     setApplicationId(null);
     setJobDescription(null);
 
+    const params = new URLSearchParams({ url: jobUrl });
+    if (force) params.set("force", "true");
+
+    // Split into two try/catches on purpose: fetch() throwing means the
+    // request never reached the server at all (offline, DNS, connection
+    // refused) - a genuinely different situation from a response coming
+    // back that isn't valid JSON (a crashed function, a proxy/gateway error
+    // page). Collapsing both into one generic message was hiding which one
+    // actually happened, on top of already-specific errors the server
+    // returns for every step it recognizes (bad URL, JD fetch failed, no
+    // knowledge base, no LLM key, LLM call failed, save failed).
+    let res: Response;
     try {
-      const params = new URLSearchParams({ url: jobUrl });
-      if (force) params.set("force", "true");
-      const res = await fetch(`/api/analyze?${params.toString()}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "Something went wrong.");
-        return;
-      }
-
-      setAnalysis(data.analysis);
-      setApplicationId(data.applicationId ?? null);
-      setJobDescription(data.jobDescription ?? null);
-      setCached(Boolean(data.cached));
+      res = await fetch(`/api/analyze?${params.toString()}`);
     } catch {
-      setError("Failed to reach the analysis service.");
-    } finally {
+      setError("Couldn't reach the server. Check your connection and try again.");
       setIsAnalyzing(false);
+      return;
     }
+
+    let data: { error?: string; analysis?: JobAnalysis; applicationId?: string; jobDescription?: string; cached?: boolean };
+    try {
+      data = await res.json();
+    } catch {
+      setError(
+        `The server returned an unexpected response (status ${res.status}). Please try again.`
+      );
+      setIsAnalyzing(false);
+      return;
+    }
+
+    if (!res.ok) {
+      setError(data.error ?? `Something went wrong (status ${res.status}).`);
+      setIsAnalyzing(false);
+      return;
+    }
+
+    if (!data.analysis) {
+      setError("The server response was missing the analysis. Please try again.");
+      setIsAnalyzing(false);
+      return;
+    }
+
+    setAnalysis(data.analysis);
+    setApplicationId(data.applicationId ?? null);
+    setJobDescription(data.jobDescription ?? null);
+    setCached(Boolean(data.cached));
+    setIsAnalyzing(false);
   }
 
   return (

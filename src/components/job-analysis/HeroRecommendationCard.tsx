@@ -16,14 +16,15 @@ const DECISION_BADGE_CLASSNAME: Record<JobAnalysis["applicationRecommendation"][
 
 /**
  * The first thing on the page - answers "should I apply?" before anything
- * else. Bundles every "verdict" text field (decision reason, summary,
- * recruiter's first read) into this one card rather than spreading them
- * across separate full-width cards, so reading the verdict doesn't mean
- * reading three near-identical paragraphs at three different scroll
- * positions. ctaHref is computed by the caller: an anchor to the tailoring
- * panel on the application detail page, or a link to it from the standalone
- * analyze page - this card never triggers generation itself, so there's
- * only one place (TailoredResumePanel) that owns that state machine.
+ * else. Shows exactly two pieces of prose, each a genuinely different kind
+ * of content rather than the same verdict paraphrased twice: reason is the
+ * analytical fit judgment (strength/risk/tailoring worth it), and the
+ * recruiter's-read quote is the gut-reaction/presentation impression - see
+ * the prompt for how those are kept distinct at generation time. ctaHref is
+ * computed by the caller: an anchor to the tailoring panel on the
+ * application detail page, or a link to it from the standalone analyze page
+ * - this card never triggers generation itself, so there's only one place
+ * (TailoredResumePanel) that owns that state machine.
  */
 export function HeroRecommendationCard({
   analysis,
@@ -69,9 +70,6 @@ export function HeroRecommendationCard({
 
         <p className="text-base leading-relaxed text-foreground/90">
           {analysis.applicationRecommendation.reason}
-        </p>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {analysis.summary}
         </p>
 
         {analysis.hardBlockers.length > 0 && (

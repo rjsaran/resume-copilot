@@ -7,12 +7,36 @@ import {
   coverLetterVersions,
   outcomes,
   resumeVersions,
+  scrapedJobDescriptions,
 } from "@/lib/db/schema";
-import type { Application, ApplicationStatus } from "@/lib/db/schema";
+import type { Application, ApplicationStatus, ScrapedJobDescription } from "@/lib/db/schema";
 import type { JobAnalysis } from "@/types/analysis";
 
 export function hashJobUrl(jobUrl: string): string {
   return createHash("sha256").update(jobUrl).digest("hex");
+}
+
+/**
+ * Saves the raw scraped job posting the moment it's fetched, before the LLM
+ * analysis step runs - so a scrape is never lost just because the analysis
+ * that was going to follow it failed. Call this right after a successful
+ * fetch, independent of whether analysis succeeds afterward.
+ */
+export async function upsertScrapedJobDescription(
+  userId: string,
+  jobUrl: string,
+  jdMarkdown: string,
+): Promise<ScrapedJobDescription> {
+  const jobHash = hashJobUrl(jobUrl);
+  const [row] = await db
+    .insert(scrapedJobDescriptions)
+    .values({ userId, jobUrl, jobHash, jdMarkdown })
+    .onConflictDoUpdate({
+      target: [scrapedJobDescriptions.userId, scrapedJobDescriptions.jobHash],
+      set: { jobUrl, jdMarkdown, updatedAt: new Date() },
+    })
+    .returning();
+  return row;
 }
 
 export interface SaveAnalysisInput {

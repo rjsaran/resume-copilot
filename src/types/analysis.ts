@@ -67,6 +67,11 @@ export interface FitSummary {
 /**
  * The plain-English "what should I do" call — derived only from how well the
  * resume fits the job, never from a prediction of interview/hiring odds.
+ * `reason` is the analysis's one and only "why" paragraph (fit judgment,
+ * biggest strength, biggest real risk, whether tailoring helps) - there used
+ * to be a separate top-level `summary` field saying nearly the same thing in
+ * different words, plus recruiterFirstImpression converging on the same
+ * points a third time. Removed rather than kept "distinct in theory."
  */
 export interface ApplicationRecommendation {
   decision: ApplicationDecision;
@@ -82,7 +87,6 @@ export interface JobAnalysis {
   recommendationStatus: RecommendationStatus;
   applicationRecommendation: ApplicationRecommendation;
   competitionRisk: CompetitionRiskLevel;
-  summary: string;
   strengths: Strength[];
   hardBlockers: string[];
   coverage: CoverageItem[];
@@ -210,9 +214,9 @@ const APPLICATION_RECOMMENDATION_SCHEMA = {
     },
     reason: {
       type: "string",
-      maxLength: 240,
+      maxLength: 500,
       description:
-        "1-2 sentences justifying the decision, grounded only in how well the resume/career history fits the job description — never an estimate of interview or hiring likelihood.",
+        "2-4 sentences justifying the decision: whether the resume fits this role and why, the biggest strength, the biggest real risk, and whether tailoring is worth the effort. The analysis's single \"why\" paragraph — grounded only in how well the resume/career history fits the job description, never an estimate of interview or hiring likelihood.",
     },
   },
   required: ["decision", "reason"],
@@ -255,12 +259,6 @@ export const JOB_ANALYSIS_SCHEMA = {
       description:
         "How likely another, more closely-aligned candidate exists for this role — a market/positioning signal, not a judgment of this candidate. High for niche technology/specialist/uncommon-domain roles; Medium when the fit relies on transferable skills; Low when the candidate already matches nearly everything.",
     },
-    summary: {
-      type: "string",
-      maxLength: 400,
-      description:
-        "2-4 plain-language sentences: whether the resume fits this role and why, the biggest strength, the biggest real gap, and whether tailoring is worth it. Describe fit, not hiring odds. Natural language, not generic filler.",
-    },
     strengths: {
       type: "array",
       items: STRENGTH_SCHEMA,
@@ -285,7 +283,7 @@ export const JOB_ANALYSIS_SCHEMA = {
       type: "string",
       maxLength: 800,
       description:
-        "A natural first-person paragraph (~120 words) written as a recruiter's 30-second read of the resume against this job — what stands out immediately and any concerns. Ground it in interest, not certainty (e.g. \"I'd be interested in learning more\" rather than \"I would definitely interview\"). Conversational, not a restatement of summary.",
+        "A natural first-person paragraph (~120 words) capturing the GUT REACTION of a recruiter's 30-second scan — not a second analysis of fit. applicationRecommendation.reason already covers the fit judgment, biggest strength, and biggest risk; do not restate those same facts here in different words. Instead describe things that only exist at the level of a quick skim: what visually/structurally jumps out first, how the resume reads (clear vs. cluttered, well-organized vs. hard to follow), what would make a recruiter want to keep reading or set it aside, and any immediate impression not already covered elsewhere. Ground it in interest, not certainty (e.g. \"I'd be interested in learning more\" rather than \"I would definitely interview\"). Conversational, opinionated, specific to this resume.",
     },
   },
   required: [
@@ -296,7 +294,6 @@ export const JOB_ANALYSIS_SCHEMA = {
     "recommendationStatus",
     "applicationRecommendation",
     "competitionRisk",
-    "summary",
     "strengths",
     "hardBlockers",
     "coverage",
@@ -398,7 +395,6 @@ function isModelJobAnalysisShape(v: Record<string, unknown>): boolean {
     isRecommendationStatus(v.recommendationStatus) &&
     isApplicationRecommendation(v.applicationRecommendation) &&
     (v.competitionRisk === "Low" || v.competitionRisk === "Medium" || v.competitionRisk === "High") &&
-    typeof v.summary === "string" &&
     Array.isArray(v.strengths) &&
     v.strengths.every(isStrength) &&
     isStringArray(v.hardBlockers) &&

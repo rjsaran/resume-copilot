@@ -4,6 +4,7 @@ import {
   getApplicationByJobHash,
   hashJobUrl,
   saveAnalysis,
+  upsertScrapedJobDescription,
 } from "@/lib/repositories/applicationRepository";
 import {
   requireKnowledgeBase,
@@ -27,6 +28,30 @@ export async function GET(request: NextRequest) {
 
   const log = logger.child({ route: "/api/analyze", userId: user.id });
 
+  try {
+    return await handleAnalyze(request, user, log);
+  } catch (error) {
+    // Last-resort safety net: every step above already returns its own
+    // specific JSON error, so reaching here means something genuinely
+    // unanticipated happened (e.g. a DB hiccup on a query that isn't
+    // individually wrapped). Without this, an uncaught exception here can
+    // surface to the client as a non-JSON error page, which is exactly what
+    // turns into the unhelpful catch-all "Failed to reach the analysis
+    // service." on the frontend - this guarantees a parseable JSON body
+    // instead, even for the case we didn't specifically plan for.
+    log.error("Unhandled error in /api/analyze", errorContext(error));
+    return NextResponse.json(
+      { error: "Something unexpected went wrong. Please try again." },
+      { status: 500 },
+    );
+  }
+}
+
+async function handleAnalyze(
+  request: NextRequest,
+  user: { id: string },
+  log: ReturnType<typeof logger.child>,
+) {
   const jobUrl = request.nextUrl.searchParams.get("url");
   const forceReanalyze = request.nextUrl.searchParams.get("force") === "true";
 
@@ -85,6 +110,16 @@ export async function GET(request: NextRequest) {
 
   const jobDescription = await jobResponse.text();
   const jobHash = hashJobUrl(parsedUrl.toString());
+
+  // Persist the scrape immediately, before the LLM step - a fetch that cost
+  // a real network round-trip to Jina should never be thrown away just
+  // because analysis fails afterward (rate limit, bad key, provider
+  // outage). Best-effort: never let a failure here block analysis itself.
+  try {
+    await upsertScrapedJobDescription(user.id, parsedUrl.toString(), jobDescription);
+  } catch (error) {
+    log.warn("Failed to persist scraped job description", errorContext(error));
+  }
 
   // Skip the LLM call entirely if this exact posting was already analyzed
   // for this user and the scraped text hasn't changed since - the common
