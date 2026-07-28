@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Analyze", icon: Sparkles },
   { href: "/applications", label: "Applications", icon: LayoutList },
 ] as const;
 
@@ -47,7 +46,7 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
     <header className="sticky top-0 z-40 border-b bg-zinc-50/80 backdrop-blur print:hidden dark:bg-black/80">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-8">
         <Link
-          href="/"
+          href="/applications"
           className="flex items-center gap-2 text-sm font-semibold tracking-tight"
         >
           <Sparkles className="size-4" />
@@ -55,10 +54,7 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
         </Link>
         <nav className="flex items-center gap-1">
           {NAV_ITEMS.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+            const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
               <Link

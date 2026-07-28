@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NavBar } from "@/components/nav-bar";
+import { AnalyzeProvider } from "@/components/analyze/analyze-context";
+import { AnalyzeLauncher } from "@/components/analyze/analyze-launcher";
 import { getCurrentUser } from "@/lib/auth";
 import { signOutAction } from "@/app/auth/actions";
 import "./globals.css";
@@ -34,7 +36,14 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <NavBar userEmail={user?.email} onSignOut={signOutAction} />
-        {children}
+        {user ? (
+          <AnalyzeProvider>
+            {children}
+            <AnalyzeLauncher />
+          </AnalyzeProvider>
+        ) : (
+          children
+        )}
       </body>
     </html>
   );

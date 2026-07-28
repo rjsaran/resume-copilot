@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   Check,
+  ChevronDown,
   Copy,
   Download,
   FileOutput,
@@ -20,6 +21,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -65,6 +71,14 @@ export function TailoredResumePanel({
   const [versions, setVersions] = useState<ResumeVersionDTO[]>(initialVersions);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
     () => initialVersions.find((v) => v.type === "TAILORED")?.id ?? null,
+  );
+  // Collapsed by default once a tailored version already exists - the full
+  // preview/edit/diff surface is the tallest thing on the application page,
+  // and after the first visit it's reference material you dip into, not
+  // something to lead with every time. Left open when there's nothing
+  // generated yet so the "Generate Resume" empty state stays visible.
+  const [open, setOpen] = useState(
+    () => !initialVersions.some((v) => v.type === "TAILORED"),
   );
   const [view, setView] = useState<ViewMode>("preview");
   const [draft, setDraft] = useState<ResumeData | null>(null);
@@ -148,6 +162,10 @@ export function TailoredResumePanel({
         return [tailoredDto, ...withoutStale];
       });
 
+      // A freshly generated version should never land inside a collapsed
+      // panel the user can't see.
+      setOpen(true);
+
       // Don't yank the user away from an in-progress, unsaved edit of a
       // different version just because a background generation finished -
       // that would silently discard their draft. The new version is still
@@ -211,156 +229,168 @@ export function TailoredResumePanel({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle>Tailored Resume</CardTitle>
-            <CardDescription>
-              AI-tailored version for this job, rendered from structured resume
-              data.
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {tailoredVersions.length > 0 && (
-              <Select
-                value={selectedVersionId ?? undefined}
-                onValueChange={setSelectedVersionId}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue>
-                    {(id: string) =>
-                      tailoredVersions.find((version) => version.id === id)
-                        ?.name ?? ""
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {tailoredVersions.map((version) => (
-                    <SelectItem key={version.id} value={version.id}>
-                      {version.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <Button onClick={handleGenerate} disabled={isGenerating} size="sm">
-              {isGenerating ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Sparkles className="size-4" />
-              )}
-              {tailoredVersions.length === 0 ? "Generate Resume" : "Regenerate"}
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {error && (
-          <p className="rounded-md border border-destructive/50 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-
-        {!masterVersion || !selectedVersion || !activeResume ? (
-          <p className="text-sm text-muted-foreground">
-            {isGenerating
-              ? "Tailoring your resume to this job - this can take a little while..."
-              : "No tailored resume yet. Click “Generate Resume” to create one from your master resume, this job's description, and its analysis."}
-          </p>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex gap-1 rounded-md border p-0.5">
-                <ViewTab
-                  active={view === "preview"}
-                  onClick={() => setView("preview")}
-                  icon={Rows3}
-                  label="Preview"
-                />
-                <ViewTab
-                  active={view === "edit"}
-                  onClick={() => setView("edit")}
-                  icon={Pencil}
-                  label="Edit"
-                />
-                <ViewTab
-                  active={view === "diff"}
-                  onClick={() => setView("diff")}
-                  icon={Rows3}
-                  label="Diff"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {view === "edit" && (
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={!hasUnsavedChanges || isSaving}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Save className="size-3.5" />
-                    )}
-                    Save changes
-                  </Button>
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <CollapsibleTrigger className="flex items-start gap-2 text-left">
+              <ChevronDown
+                className={cn(
+                  "mt-1 size-4 shrink-0 text-muted-foreground transition-transform",
+                  open && "rotate-180",
                 )}
-                <Button variant="outline" size="sm" onClick={handleCopy}>
-                  {copied ? (
-                    <Check className="size-3.5" />
-                  ) : (
-                    <Copy className="size-3.5" />
-                  )}
-                  {copied ? "Copied" : "Copy JSON"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadJson}
-                >
-                  <Download className="size-3.5" />
-                  Download JSON
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExportPdf}>
-                  <FileOutput className="size-3.5" />
-                  Export PDF
-                </Button>
+              />
+              <div>
+                <CardTitle>Tailored Resume</CardTitle>
+                <CardDescription>
+                  AI-tailored version for this job, rendered from structured
+                  resume data.
+                </CardDescription>
               </div>
+            </CollapsibleTrigger>
+            <div className="flex flex-wrap items-center gap-2">
+              {tailoredVersions.length > 0 && (
+                <Select
+                  value={selectedVersionId ?? undefined}
+                  onValueChange={setSelectedVersionId}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue>
+                      {(id: string) =>
+                        tailoredVersions.find((version) => version.id === id)
+                          ?.name ?? ""
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tailoredVersions.map((version) => (
+                      <SelectItem key={version.id} value={version.id}>
+                        {version.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button onClick={handleGenerate} disabled={isGenerating} size="sm">
+                {isGenerating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                {tailoredVersions.length === 0 ? "Generate Resume" : "Regenerate"}
+              </Button>
             </div>
-
-            {hasUnsavedChanges && view !== "edit" && (
-              <p className="text-xs text-muted-foreground">
-                You have unsaved edits. Switch to Edit and save them to include
-                in the exported PDF.
+          </div>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="flex flex-col gap-4">
+            {error && (
+              <p className="rounded-md border border-destructive/50 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                {error}
               </p>
             )}
 
-            {view === "preview" && (
-              <div className="flex justify-center overflow-x-auto rounded-md bg-neutral-100 py-6 dark:bg-neutral-900">
-                <Resume data={activeResume} theme="classic" />
-              </div>
-            )}
+            {!masterVersion || !selectedVersion || !activeResume ? (
+              <p className="text-sm text-muted-foreground">
+                {isGenerating
+                  ? "Tailoring your resume to this job - this can take a little while..."
+                  : "No tailored resume yet. Click “Generate Resume” to create one from your master resume, this job's description, and its analysis."}
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex gap-1 rounded-md border p-0.5">
+                    <ViewTab
+                      active={view === "preview"}
+                      onClick={() => setView("preview")}
+                      icon={Rows3}
+                      label="Preview"
+                    />
+                    <ViewTab
+                      active={view === "edit"}
+                      onClick={() => setView("edit")}
+                      icon={Pencil}
+                      label="Edit"
+                    />
+                    <ViewTab
+                      active={view === "diff"}
+                      onClick={() => setView("diff")}
+                      icon={Rows3}
+                      label="Diff"
+                    />
+                  </div>
 
-            {view === "edit" && (
-              <div className="rounded-md border p-4">
-                <ResumeEditor resume={activeResume} onChange={setDraft} />
-              </div>
-            )}
+                  <div className="flex flex-wrap gap-2">
+                    {view === "edit" && (
+                      <Button
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={!hasUnsavedChanges || isSaving}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Save className="size-3.5" />
+                        )}
+                        Save changes
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={handleCopy}>
+                      {copied ? (
+                        <Check className="size-3.5" />
+                      ) : (
+                        <Copy className="size-3.5" />
+                      )}
+                      {copied ? "Copied" : "Copy JSON"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadJson}
+                    >
+                      <Download className="size-3.5" />
+                      Download JSON
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPdf}>
+                      <FileOutput className="size-3.5" />
+                      Export PDF
+                    </Button>
+                  </div>
+                </div>
 
-            {view === "diff" && (
-              <ResumeDiffViewer
-                beforeTitle="Master Resume"
-                afterTitle={selectedVersion.name}
-                before={resumeToPlainText(masterVersion.resume)}
-                after={resumeToPlainText(activeResume)}
-              />
+                {hasUnsavedChanges && view !== "edit" && (
+                  <p className="text-xs text-muted-foreground">
+                    You have unsaved edits. Switch to Edit and save them to
+                    include in the exported PDF.
+                  </p>
+                )}
+
+                {view === "preview" && (
+                  <div className="flex justify-center overflow-x-auto rounded-md bg-neutral-100 py-6 dark:bg-neutral-900">
+                    <Resume data={activeResume} theme="classic" />
+                  </div>
+                )}
+
+                {view === "edit" && (
+                  <div className="rounded-md border p-4">
+                    <ResumeEditor resume={activeResume} onChange={setDraft} />
+                  </div>
+                )}
+
+                {view === "diff" && (
+                  <ResumeDiffViewer
+                    beforeTitle="Master Resume"
+                    afterTitle={selectedVersion.name}
+                    before={resumeToPlainText(masterVersion.resume)}
+                    after={resumeToPlainText(activeResume)}
+                  />
+                )}
+              </>
             )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 

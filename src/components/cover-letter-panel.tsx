@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   Check,
+  ChevronDown,
   Copy,
   Download,
   FileOutput,
@@ -20,6 +21,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -63,6 +69,9 @@ export function CoverLetterPanel({
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
     () => initialVersions[0]?.id ?? null,
   );
+  // Collapsed by default once a version already exists - see the matching
+  // note on TailoredResumePanel.
+  const [open, setOpen] = useState(() => initialVersions.length === 0);
   const [view, setView] = useState<ViewMode>("preview");
   const [draft, setDraft] = useState<CoverLetterData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +126,10 @@ export function CoverLetterPanel({
       };
 
       setVersions((prev) => [dto, ...prev.filter((v) => v.id !== dto.id)]);
+
+      // A freshly generated version should never land inside a collapsed
+      // panel the user can't see.
+      setOpen(true);
 
       // Don't yank the user away from an in-progress, unsaved edit of a
       // different version just because a background generation finished -
@@ -185,143 +198,156 @@ export function CoverLetterPanel({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle>Cover Letter</CardTitle>
-            <CardDescription>
-              AI-generated cover letter for this job, rendered from structured
-              data.
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {versions.length > 0 && (
-              <Select
-                value={selectedVersionId ?? undefined}
-                onValueChange={setSelectedVersionId}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue>
-                    {(id: string) =>
-                      versions.find((version) => version.id === id)?.name ?? ""
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {versions.map((version) => (
-                    <SelectItem key={version.id} value={version.id}>
-                      {version.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <Button onClick={handleGenerate} disabled={isGenerating} size="sm">
-              {isGenerating ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Sparkles className="size-4" />
-              )}
-              {versions.length === 0 ? "Generate Cover Letter" : "Regenerate"}
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {error && (
-          <p className="rounded-md border border-destructive/50 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-
-        {!selectedVersion || !activeCoverLetter ? (
-          <p className="text-sm text-muted-foreground">
-            {isGenerating
-              ? "Writing your cover letter for this job - this can take a little while..."
-              : "No cover letter yet. Click “Generate Cover Letter” to create one from your career knowledge base, this job's description, and its analysis."}
-          </p>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex gap-1 rounded-md border p-0.5">
-                <ViewTab
-                  active={view === "preview"}
-                  onClick={() => setView("preview")}
-                  icon={Rows3}
-                  label="Preview"
-                />
-                <ViewTab
-                  active={view === "edit"}
-                  onClick={() => setView("edit")}
-                  icon={Pencil}
-                  label="Edit"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {view === "edit" && (
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={!hasUnsavedChanges || isSaving}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Save className="size-3.5" />
-                    )}
-                    Save changes
-                  </Button>
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <CollapsibleTrigger className="flex items-start gap-2 text-left">
+              <ChevronDown
+                className={cn(
+                  "mt-1 size-4 shrink-0 text-muted-foreground transition-transform",
+                  open && "rotate-180",
                 )}
-                <Button variant="outline" size="sm" onClick={handleCopy}>
-                  {copied ? (
-                    <Check className="size-3.5" />
-                  ) : (
-                    <Copy className="size-3.5" />
-                  )}
-                  {copied ? "Copied" : "Copy JSON"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadJson}
-                >
-                  <Download className="size-3.5" />
-                  Download JSON
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExportPdf}>
-                  <FileOutput className="size-3.5" />
-                  Export PDF
-                </Button>
+              />
+              <div>
+                <CardTitle>Cover Letter</CardTitle>
+                <CardDescription>
+                  AI-generated cover letter for this job, rendered from
+                  structured data.
+                </CardDescription>
               </div>
+            </CollapsibleTrigger>
+            <div className="flex flex-wrap items-center gap-2">
+              {versions.length > 0 && (
+                <Select
+                  value={selectedVersionId ?? undefined}
+                  onValueChange={setSelectedVersionId}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue>
+                      {(id: string) =>
+                        versions.find((version) => version.id === id)
+                          ?.name ?? ""
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {versions.map((version) => (
+                      <SelectItem key={version.id} value={version.id}>
+                        {version.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button onClick={handleGenerate} disabled={isGenerating} size="sm">
+                {isGenerating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                {versions.length === 0 ? "Generate Cover Letter" : "Regenerate"}
+              </Button>
             </div>
-
-            {hasUnsavedChanges && view !== "edit" && (
-              <p className="text-xs text-muted-foreground">
-                You have unsaved edits. Switch to Edit and save them to include
-                in the exported PDF.
+          </div>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="flex flex-col gap-4">
+            {error && (
+              <p className="rounded-md border border-destructive/50 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                {error}
               </p>
             )}
 
-            {view === "preview" && (
-              <div className="flex justify-center overflow-x-auto rounded-md bg-neutral-100 py-6 dark:bg-neutral-900">
-                <CoverLetter data={activeCoverLetter} />
-              </div>
-            )}
+            {!selectedVersion || !activeCoverLetter ? (
+              <p className="text-sm text-muted-foreground">
+                {isGenerating
+                  ? "Writing your cover letter for this job - this can take a little while..."
+                  : "No cover letter yet. Click “Generate Cover Letter” to create one from your career knowledge base, this job's description, and its analysis."}
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex gap-1 rounded-md border p-0.5">
+                    <ViewTab
+                      active={view === "preview"}
+                      onClick={() => setView("preview")}
+                      icon={Rows3}
+                      label="Preview"
+                    />
+                    <ViewTab
+                      active={view === "edit"}
+                      onClick={() => setView("edit")}
+                      icon={Pencil}
+                      label="Edit"
+                    />
+                  </div>
 
-            {view === "edit" && (
-              <div className="rounded-md border p-4">
-                <CoverLetterEditor
-                  coverLetter={activeCoverLetter}
-                  onChange={setDraft}
-                />
-              </div>
+                  <div className="flex flex-wrap gap-2">
+                    {view === "edit" && (
+                      <Button
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={!hasUnsavedChanges || isSaving}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Save className="size-3.5" />
+                        )}
+                        Save changes
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={handleCopy}>
+                      {copied ? (
+                        <Check className="size-3.5" />
+                      ) : (
+                        <Copy className="size-3.5" />
+                      )}
+                      {copied ? "Copied" : "Copy JSON"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadJson}
+                    >
+                      <Download className="size-3.5" />
+                      Download JSON
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPdf}>
+                      <FileOutput className="size-3.5" />
+                      Export PDF
+                    </Button>
+                  </div>
+                </div>
+
+                {hasUnsavedChanges && view !== "edit" && (
+                  <p className="text-xs text-muted-foreground">
+                    You have unsaved edits. Switch to Edit and save them to
+                    include in the exported PDF.
+                  </p>
+                )}
+
+                {view === "preview" && (
+                  <div className="flex justify-center overflow-x-auto rounded-md bg-neutral-100 py-6 dark:bg-neutral-900">
+                    <CoverLetter data={activeCoverLetter} />
+                  </div>
+                )}
+
+                {view === "edit" && (
+                  <div className="rounded-md border p-4">
+                    <CoverLetterEditor
+                      coverLetter={activeCoverLetter}
+                      onChange={setDraft}
+                    />
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 

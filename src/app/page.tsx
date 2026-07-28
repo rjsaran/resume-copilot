@@ -1,26 +1,11 @@
-import { requireUser } from "@/lib/auth";
-import { getUserSettings } from "@/lib/repositories/userSettingsRepository";
-import { getKnowledgeBase } from "@/lib/repositories/knowledgeBaseRepository";
-import { AnalyzeForm } from "@/components/analyze-form";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const user = await requireUser();
-
-  const settings = await getUserSettings(user.id);
-
-  let hasKnowledgeBase = false;
-  try {
-    hasKnowledgeBase = Boolean(await getKnowledgeBase(user.id));
-  } catch {
-    hasKnowledgeBase = false;
-  }
-
-  return (
-    <AnalyzeForm
-      hasApiKey={Boolean(settings?.encryptedGeminiKey)}
-      hasKnowledgeBase={hasKnowledgeBase}
-    />
-  );
+/**
+ * Analysis is now started from the floating "Analyze" launcher available on
+ * every page (see AnalyzeLauncher), not a dedicated page - "/" has nothing
+ * of its own to show, so it forwards to the applications list, the same
+ * place sign-in already lands a user.
+ */
+export default function Home() {
+  redirect("/applications");
 }

@@ -7,7 +7,7 @@ import { OpenRouterProvider } from "@/services/llm/providers/openrouter";
 import { LLMProviderError, type LLMProvider } from "@/services/llm/types";
 import type { LlmProvider as LlmProviderName } from "@/lib/db/schema";
 
-const ENCRYPTED_KEY_BY_PROVIDER: Record<
+export const ENCRYPTED_KEY_BY_PROVIDER: Record<
   LlmProviderName,
   keyof {
     encryptedGeminiKey: string | null;
