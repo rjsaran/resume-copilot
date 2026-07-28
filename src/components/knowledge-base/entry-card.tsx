@@ -3,7 +3,11 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +19,14 @@ interface EntryCardProps {
   children: ReactNode;
 }
 
-/** Collapsible card for one list entry (an experience, project, or education item) — shared by all three sections. */
-export function EntryCard({ title, subtitle, defaultOpen = false, onRemove, children }: EntryCardProps) {
+/** Collapsible card for one list entry (an experience, project, or education item) - shared by all three sections. */
+export function EntryCard({
+  title,
+  subtitle,
+  defaultOpen = false,
+  onRemove,
+  children,
+}: EntryCardProps) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
@@ -27,13 +37,19 @@ export function EntryCard({ title, subtitle, defaultOpen = false, onRemove, chil
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{title || "Untitled"}</p>
-                  {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
+                  <p className="truncate text-sm font-medium">
+                    {title || "Untitled"}
+                  </p>
+                  {subtitle && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {subtitle}
+                    </p>
+                  )}
                 </div>
                 <ChevronDown
                   className={cn(
                     "size-4 shrink-0 text-muted-foreground transition-transform",
-                    open && "rotate-180"
+                    open && "rotate-180",
                   )}
                 />
               </div>

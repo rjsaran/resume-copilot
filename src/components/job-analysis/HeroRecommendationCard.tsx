@@ -22,11 +22,7 @@ const DECISION_BADGE_CLASSNAME: Record<
  * of content rather than the same verdict paraphrased twice: reason is the
  * analytical fit judgment (strength/risk/tailoring worth it), and the
  * recruiter's-read quote is the gut-reaction/presentation impression - see
- * the prompt for how those are kept distinct at generation time. ctaHref is
- * computed by the caller: an anchor to the tailoring panel on the
- * application detail page, or a link to it from the standalone analyze page
- * - this card never triggers generation itself, so there's only one place
- * (TailoredResumePanel) that owns that state machine.
+ * the prompt for how those are kept distinct at generation time.
  */
 export function HeroRecommendationCard({
   analysis,
@@ -58,23 +54,15 @@ export function HeroRecommendationCard({
               </h2>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <Badge
-              className={
-                DECISION_BADGE_CLASSNAME[
-                  analysis.applicationRecommendation.decision
-                ]
-              }
-            >
-              {analysis.applicationRecommendation.decision}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="text-xs font-normal text-muted-foreground"
-            >
-              {analysis.competitionRisk} competition
-            </Badge>
-          </div>
+          <Badge
+            className={
+              DECISION_BADGE_CLASSNAME[
+                analysis.applicationRecommendation.decision
+              ]
+            }
+          >
+            {analysis.applicationRecommendation.decision}
+          </Badge>
         </div>
 
         <p className="text-base leading-relaxed text-foreground/90">

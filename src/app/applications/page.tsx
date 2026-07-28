@@ -92,7 +92,13 @@ export default async function ApplicationsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {application.createdAt.toLocaleDateString()}
+                        {application.createdAt.toLocaleDateString()}{" "}
+                        <span className="text-xs">
+                          {application.createdAt.toLocaleTimeString([], {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -199,7 +199,7 @@ export function AnalyzeForm({ hasApiKey, hasKnowledgeBase }: AnalyzeFormProps) {
             )}
             {/* Condensed on purpose: the full breakdown (score dimensions,
                 coverage, gap-by-gap detail, quick wins, recruiter notes) lives
-                once, permanently, on the application page — showing it here
+                once, permanently, on the application page - showing it here
                 too would just be the same dashboard rendered twice a few
                 seconds apart. */}
             <HeroRecommendationCard analysis={analysis} />

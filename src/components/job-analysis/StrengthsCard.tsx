@@ -7,7 +7,7 @@ import type { Strength } from "@/types/analysis";
  * Quick, scannable list of what makes this candidate a fit, evidence shown
  * inline. Risks used to live here too as a second column, but they were a
  * pure duplicate of Requirement Coverage's missing/partial entries and Gap
- * details' full reasoning — removed rather than shown a third time.
+ * details' full reasoning - removed rather than shown a third time.
  */
 export function StrengthsCard({ strengths }: { strengths: Strength[] }) {
   return (
@@ -20,7 +20,9 @@ export function StrengthsCard({ strengths }: { strengths: Strength[] }) {
       </CardHeader>
       <CardContent>
         {strengths.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No standout strengths identified.</p>
+          <p className="text-sm text-muted-foreground">
+            No standout strengths identified.
+          </p>
         ) : (
           <div className="flex flex-col gap-3">
             {strengths.map((strength, i) => (
@@ -29,7 +31,9 @@ export function StrengthsCard({ strengths }: { strengths: Strength[] }) {
                   {strength.title}
                 </Badge>
                 {strength.evidence.length > 0 && (
-                  <p className="text-xs text-muted-foreground">{strength.evidence.join(" · ")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {strength.evidence.join(" · ")}
+                  </p>
                 )}
               </div>
             ))}

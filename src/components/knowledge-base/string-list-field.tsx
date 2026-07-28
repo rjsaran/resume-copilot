@@ -20,7 +20,7 @@ interface StringListFieldProps {
  * Add/edit/remove list of plain strings. Multiline (achievements, highlights,
  * notes) stays one full-width row per fact, since those are sentences worth
  * seeing in full. Single-line (technologies, tags) renders as a compact,
- * wrapping chip input instead — a one-input-per-line list was mostly empty
+ * wrapping chip input instead - a one-input-per-line list was mostly empty
  * space for what's usually a handful of short words.
  */
 export function StringListField({
@@ -32,7 +32,14 @@ export function StringListField({
   addLabel = "Add",
 }: StringListFieldProps) {
   if (!multiline) {
-    return <TagListField label={label} values={values} onChange={onChange} placeholder={placeholder} />;
+    return (
+      <TagListField
+        label={label}
+        values={values}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
+    );
   }
 
   function updateAt(index: number, value: string) {
@@ -90,8 +97,13 @@ interface TagListFieldProps {
   placeholder?: string;
 }
 
-/** Compact wrapping chip input — type a value, press Enter/comma to add, Backspace on an empty field to pop the last one. */
-function TagListField({ label, values, onChange, placeholder }: TagListFieldProps) {
+/** Compact wrapping chip input - type a value, press Enter/comma to add, Backspace on an empty field to pop the last one. */
+function TagListField({
+  label,
+  values,
+  onChange,
+  placeholder,
+}: TagListFieldProps) {
   const [draft, setDraft] = useState("");
 
   function commit() {

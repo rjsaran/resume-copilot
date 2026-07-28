@@ -2,16 +2,30 @@
 
 import { useState } from "react";
 import { ChevronDown, FileText } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
 /**
- * Collapsed by default and placed last on the application detail page — the
+ * Collapsed by default and placed last on the application detail page - the
  * raw posting text is reference material, not something to lead with above
  * the analysis, tailoring, and status history.
  */
-export function JobDescriptionCard({ jdMarkdown }: { jdMarkdown: string | null }) {
+export function JobDescriptionCard({
+  jdMarkdown,
+}: {
+  jdMarkdown: string | null;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -25,12 +39,14 @@ export function JobDescriptionCard({ jdMarkdown }: { jdMarkdown: string | null }
                   <FileText className="size-4 text-muted-foreground" />
                   <CardTitle>Original Job Description</CardTitle>
                 </div>
-                <CardDescription>Extracted markdown from the posting URL.</CardDescription>
+                <CardDescription>
+                  Extracted markdown from the posting URL.
+                </CardDescription>
               </div>
               <ChevronDown
                 className={cn(
                   "size-4 shrink-0 text-muted-foreground transition-transform",
-                  open && "rotate-180"
+                  open && "rotate-180",
                 )}
               />
             </div>
@@ -43,7 +59,9 @@ export function JobDescriptionCard({ jdMarkdown }: { jdMarkdown: string | null }
                 {jdMarkdown}
               </pre>
             ) : (
-              <p className="text-sm text-muted-foreground">No job description saved.</p>
+              <p className="text-sm text-muted-foreground">
+                No job description saved.
+              </p>
             )}
           </CardContent>
         </CollapsibleContent>

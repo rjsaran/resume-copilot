@@ -2,13 +2,22 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { PersonalInfoSection } from "@/components/knowledge-base/personal-info-section";
 import { ExperienceSection } from "@/components/knowledge-base/experience-section";
 import { ProjectsSection } from "@/components/knowledge-base/projects-section";
 import { TechnologiesSection } from "@/components/knowledge-base/technologies-section";
 import { EducationSection } from "@/components/knowledge-base/education-section";
-import { isCareerKnowledgeBase, type CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
+import {
+  isCareerKnowledgeBase,
+  type CareerKnowledgeBase,
+} from "@/types/careerKnowledgeBase";
 import { saveKnowledgeBaseAction } from "@/app/knowledge-base/actions";
 
 interface KnowledgeBaseEditorProps {
@@ -69,7 +78,10 @@ function cleanKnowledgeBase(data: CareerKnowledgeBase): CareerKnowledgeBase {
       }))
       .filter((p) => p.name || p.description || p.highlights.length > 0),
     technologies: data.technologies
-      .map((t) => ({ category: t.category.trim(), items: cleanStrings(t.items) }))
+      .map((t) => ({
+        category: t.category.trim(),
+        items: cleanStrings(t.items),
+      }))
       .filter((t) => t.category && t.items.length > 0),
     education: data.education
       .map((e) => ({
@@ -104,7 +116,9 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
 
     const cleaned = cleanKnowledgeBase(data);
     if (!isCareerKnowledgeBase(cleaned)) {
-      setError("Something's missing — check the required fields (name, headline, email) and try again.");
+      setError(
+        "Something's missing - check the required fields (name, headline, email) and try again.",
+      );
       return;
     }
 
@@ -126,26 +140,49 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
           <div>
             <CardTitle>Career Knowledge Base</CardTitle>
             <CardDescription>
-              Every job, project, skill, and education fact you have. Edit it below, then save.
+              Every job, project, skill, and education fact you have. Edit it
+              below, then save.
             </CardDescription>
           </div>
-          <Button size="sm" onClick={handleSave} disabled={isSaving} className="shrink-0">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="shrink-0"
+          >
             {isSaving ? "Saving…" : "Save"}
           </Button>
         </CardHeader>
         {(error || saved) && (
           <CardContent className="pt-0">
             {error && <p className="text-sm text-destructive">{error}</p>}
-            {saved && !error && <p className="text-sm text-emerald-600">Saved.</p>}
+            {saved && !error && (
+              <p className="text-sm text-emerald-600">Saved.</p>
+            )}
           </CardContent>
         )}
       </Card>
 
-      <PersonalInfoSection value={data.personal} onChange={(personal) => update({ personal })} />
-      <ExperienceSection value={data.experience} onChange={(experience) => update({ experience })} />
-      <ProjectsSection value={data.projects} onChange={(projects) => update({ projects })} />
-      <TechnologiesSection value={data.technologies} onChange={(technologies) => update({ technologies })} />
-      <EducationSection value={data.education} onChange={(education) => update({ education })} />
+      <PersonalInfoSection
+        value={data.personal}
+        onChange={(personal) => update({ personal })}
+      />
+      <ExperienceSection
+        value={data.experience}
+        onChange={(experience) => update({ experience })}
+      />
+      <ProjectsSection
+        value={data.projects}
+        onChange={(projects) => update({ projects })}
+      />
+      <TechnologiesSection
+        value={data.technologies}
+        onChange={(technologies) => update({ technologies })}
+      />
+      <EducationSection
+        value={data.education}
+        onChange={(education) => update({ education })}
+      />
     </div>
   );
 }

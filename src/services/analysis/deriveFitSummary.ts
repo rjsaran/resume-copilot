@@ -1,4 +1,9 @@
-import type { FitLevel, FitSummary, OverallFitLevel, ScoreBreakdown } from "@/types/analysis";
+import type {
+  FitLevel,
+  FitSummary,
+  OverallFitLevel,
+  ScoreBreakdown,
+} from "@/types/analysis";
 
 function toFitLevel(score: number): FitLevel {
   if (score >= 90) return "Excellent";
@@ -16,12 +21,15 @@ function toOverallFitLevel(score: number): OverallFitLevel {
 
 /**
  * Computes fitSummary from scoreBreakdown/matchScore instead of asking the
- * LLM to generate both — two independently-generated fields can disagree
+ * LLM to generate both - two independently-generated fields can disagree
  * (e.g. a matchScore of 0 paired with fitSummary.overall: "Excellent Fit"),
  * so the qualitative labels are always kept consistent with the numbers by
  * deriving them, never generated as a second, separate judgment.
  */
-export function deriveFitSummary(scoreBreakdown: ScoreBreakdown, matchScore: number): FitSummary {
+export function deriveFitSummary(
+  scoreBreakdown: ScoreBreakdown,
+  matchScore: number,
+): FitSummary {
   return {
     domain: toFitLevel(scoreBreakdown.domain),
     responsibilities: toFitLevel(scoreBreakdown.responsibilities),

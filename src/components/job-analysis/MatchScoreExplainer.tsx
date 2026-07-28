@@ -38,12 +38,22 @@ function ScoreMeterTile({
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border/60 p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        <span className={cn("text-xs font-medium", scoreTextColor(clamped))}>{fitLevel}</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {label}
+        </span>
+        <span className={cn("text-xs font-medium", scoreTextColor(clamped))}>
+          {fitLevel}
+        </span>
       </div>
       <div className="flex items-center gap-2.5">
-        <span className="w-7 shrink-0 text-lg font-semibold tabular-nums">{clamped}</span>
-        <Progress value={clamped} className="flex-1" indicatorClassName={scoreColor(clamped)} />
+        <span className="w-7 shrink-0 text-lg font-semibold tabular-nums">
+          {clamped}
+        </span>
+        <Progress
+          value={clamped}
+          className="flex-1"
+          indicatorClassName={scoreColor(clamped)}
+        />
       </div>
     </div>
   );
@@ -71,7 +81,9 @@ export function MatchScoreExplainer({ analysis }: { analysis: JobAnalysis }) {
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
           <span className="text-4xl font-semibold tabular-nums">{clamped}</span>
-          <span className="text-sm text-muted-foreground">/ 100 — {analysis.fitSummary.overall}</span>
+          <span className="text-sm text-muted-foreground">
+            / 100 - {analysis.fitSummary.overall}
+          </span>
         </div>
         <Progress
           value={clamped}

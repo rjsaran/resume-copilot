@@ -1,7 +1,13 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -38,25 +44,38 @@ export function ExperienceSection({ value, onChange }: ExperienceSectionProps) {
     <Card>
       <CardHeader>
         <CardTitle>Experience</CardTitle>
-        <CardDescription>Every role — the full history, not trimmed to resume length.</CardDescription>
+        <CardDescription>
+          Every role - the full history, not trimmed to resume length.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {value.map((entry, i) => (
           <EntryCard
             key={entry.id}
-            title={[entry.role, entry.company].filter(Boolean).join(" @ ") || "New experience"}
-            subtitle={[entry.startDate, entry.endDate].filter(Boolean).join(" – ")}
+            title={
+              [entry.role, entry.company].filter(Boolean).join(" @ ") ||
+              "New experience"
+            }
+            subtitle={[entry.startDate, entry.endDate]
+              .filter(Boolean)
+              .join(" – ")}
             defaultOpen={!entry.company && !entry.role}
             onRemove={() => removeAt(i)}
           >
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label>Company</Label>
-                <Input value={entry.company} onChange={(e) => updateAt(i, { company: e.target.value })} />
+                <Input
+                  value={entry.company}
+                  onChange={(e) => updateAt(i, { company: e.target.value })}
+                />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Role</Label>
-                <Input value={entry.role} onChange={(e) => updateAt(i, { role: e.target.value })} />
+                <Input
+                  value={entry.role}
+                  onChange={(e) => updateAt(i, { role: e.target.value })}
+                />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Location</Label>
