@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Download, ExternalLink } from "lucide-react";
 import { KnowledgeBaseImportPanel } from "@/components/knowledge-base-import-panel";
 import { KnowledgeBaseEditor } from "@/components/knowledge-base-editor";
+import { Button } from "@/components/ui/button";
 import type { CareerKnowledgeBase } from "@/types/careerKnowledgeBase";
 
 /**
@@ -22,7 +24,25 @@ export function KnowledgeBaseWorkspace({ initialData }: { initialData: CareerKno
 
   return (
     <div className="flex flex-col gap-4">
-      <KnowledgeBaseImportPanel onImported={handleImported} />
+      <div className="flex flex-wrap items-center gap-2">
+        <KnowledgeBaseImportPanel onImported={handleImported} />
+        <Button
+          variant="outline"
+          render={
+            <a href="/knowledge-base/resume/preview" target="_blank" rel="noopener noreferrer" />
+          }
+        >
+          <ExternalLink className="size-4" />
+          Preview master resume
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => window.open("/api/resume/knowledge-base/pdf", "_blank")}
+        >
+          <Download className="size-4" />
+          Download master resume
+        </Button>
+      </div>
       <KnowledgeBaseEditor key={editorKey} initialData={data} />
     </div>
   );
