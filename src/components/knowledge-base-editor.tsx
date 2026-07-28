@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -98,11 +99,19 @@ function cleanKnowledgeBase(data: CareerKnowledgeBase): CareerKnowledgeBase {
   };
 }
 
+type ViewMode = "form" | "json";
+
 export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
   const [data, setData] = useState(initialData);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isSaving, startSaving] = useTransition();
+
+  const [viewMode, setViewMode] = useState<ViewMode>("form");
+  const [jsonText, setJsonText] = useState(() =>
+    JSON.stringify(initialData, null, 2),
+  );
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   function update(patch: Partial<CareerKnowledgeBase>) {
     setData((d) => ({ ...d, ...patch }));
@@ -110,11 +119,67 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
     setError(null);
   }
 
+  /**
+   * The JSON view is a raw draft, not synced with `data` on every keystroke.
+   * Parsing (and schema-checking) it happens on demand - switching back to
+   * the form, saving, or hitting "Apply" - so a mid-edit invalid JSON
+   * document never leaks into `data`.
+   */
+  function parseJsonInput(): CareerKnowledgeBase | null {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (e) {
+      setJsonError(e instanceof Error ? `Invalid JSON: ${e.message}` : "Invalid JSON.");
+      return null;
+    }
+    if (!isCareerKnowledgeBase(parsed)) {
+      setJsonError(
+        "That JSON doesn't match the expected knowledge base shape - check required fields (personal.fullName/headline/email, experience[].company/role/startDate/achievements, etc).",
+      );
+      return null;
+    }
+    setJsonError(null);
+    return parsed;
+  }
+
+  function handleApplyJson() {
+    const parsed = parseJsonInput();
+    if (!parsed) return;
+    setData(parsed);
+    setSaved(false);
+    setError(null);
+  }
+
+  function handleViewModeChange(mode: ViewMode) {
+    if (mode === viewMode) return;
+    if (mode === "json") {
+      setJsonText(JSON.stringify(data, null, 2));
+      setJsonError(null);
+      setViewMode("json");
+      return;
+    }
+    // Going json -> form: apply pending edits first, so they aren't lost.
+    // Stay on the JSON view if they don't parse/validate.
+    const parsed = parseJsonInput();
+    if (!parsed) return;
+    setData(parsed);
+    setViewMode("form");
+  }
+
   function handleSave() {
     setSaved(false);
     setError(null);
 
-    const cleaned = cleanKnowledgeBase(data);
+    let source = data;
+    if (viewMode === "json") {
+      const parsed = parseJsonInput();
+      if (!parsed) return;
+      source = parsed;
+      setData(parsed);
+    }
+
+    const cleaned = cleanKnowledgeBase(source);
     if (!isCareerKnowledgeBase(cleaned)) {
       setError(
         "Something's missing - check the required fields (name, headline, email) and try again.",
@@ -126,6 +191,9 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
       const result = await saveKnowledgeBaseAction(cleaned);
       if (result.success) {
         setData(cleaned);
+        if (viewMode === "json") {
+          setJsonText(JSON.stringify(cleaned, null, 2));
+        }
         setSaved(true);
       } else {
         setError(result.error ?? "Failed to save.");
@@ -144,14 +212,29 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
               below, then save.
             </CardDescription>
           </div>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="shrink-0"
-          >
-            {isSaving ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex rounded-lg border border-border p-0.5">
+              <Button
+                type="button"
+                size="sm"
+                variant={viewMode === "form" ? "secondary" : "ghost"}
+                onClick={() => handleViewModeChange("form")}
+              >
+                Form
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={viewMode === "json" ? "secondary" : "ghost"}
+                onClick={() => handleViewModeChange("json")}
+              >
+                JSON
+              </Button>
+            </div>
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </CardHeader>
         {(error || saved) && (
           <CardContent className="pt-0">
@@ -163,26 +246,61 @@ export function KnowledgeBaseEditor({ initialData }: KnowledgeBaseEditorProps) {
         )}
       </Card>
 
-      <PersonalInfoSection
-        value={data.personal}
-        onChange={(personal) => update({ personal })}
-      />
-      <ExperienceSection
-        value={data.experience}
-        onChange={(experience) => update({ experience })}
-      />
-      <ProjectsSection
-        value={data.projects}
-        onChange={(projects) => update({ projects })}
-      />
-      <TechnologiesSection
-        value={data.technologies}
-        onChange={(technologies) => update({ technologies })}
-      />
-      <EducationSection
-        value={data.education}
-        onChange={(education) => update({ education })}
-      />
+      {viewMode === "json" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Edit as JSON</CardTitle>
+            <CardDescription>
+              Paste or edit the knowledge base as raw JSON. Switching back to
+              Form view or saving will validate it against the expected
+              schema.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <Textarea
+              value={jsonText}
+              onChange={(e) => {
+                setJsonText(e.target.value);
+                setJsonError(null);
+              }}
+              spellCheck={false}
+              aria-invalid={jsonError ? true : undefined}
+              className="min-h-[32rem] font-mono text-xs"
+            />
+            <div className="flex items-center gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={handleApplyJson}>
+                Apply
+              </Button>
+              {jsonError && (
+                <p className="text-sm text-destructive">{jsonError}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <PersonalInfoSection
+            value={data.personal}
+            onChange={(personal) => update({ personal })}
+          />
+          <ExperienceSection
+            value={data.experience}
+            onChange={(experience) => update({ experience })}
+          />
+          <ProjectsSection
+            value={data.projects}
+            onChange={(projects) => update({ projects })}
+          />
+          <TechnologiesSection
+            value={data.technologies}
+            onChange={(technologies) => update({ technologies })}
+          />
+          <EducationSection
+            value={data.education}
+            onChange={(education) => update({ education })}
+          />
+        </>
+      )}
     </div>
   );
 }
