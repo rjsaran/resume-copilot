@@ -12,6 +12,7 @@ import {
 
 export const applicationStatusEnum = pgEnum("application_status", [
   "ANALYZED",
+  "NOT_APPLIED",
   "APPLIED",
   "RECRUITER_CALL",
   "INTERVIEW",

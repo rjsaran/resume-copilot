@@ -11,6 +11,7 @@ import { StatusSelect } from "@/components/status-select";
 import { TailoredResumePanel } from "@/components/tailored-resume-panel";
 import { CoverLetterPanel } from "@/components/cover-letter-panel";
 import { JobDescriptionCard } from "@/components/job-description-card";
+import { LocalDateTime } from "@/components/local-datetime";
 import {
   Card,
   CardContent,
@@ -178,12 +179,15 @@ export default async function ApplicationDetailPage({
                   <li key={outcome.id} className="flex flex-col gap-1 text-sm">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{outcome.stage}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {outcome.createdAt.toLocaleDateString()}
-                      </span>
+                      <LocalDateTime
+                        date={outcome.createdAt}
+                        className="text-xs text-muted-foreground"
+                      />
                     </div>
                     {outcome.notes && (
-                      <p className="text-muted-foreground">{outcome.notes}</p>
+                      <p className="whitespace-pre-wrap text-muted-foreground">
+                        {outcome.notes}
+                      </p>
                     )}
                   </li>
                 ))}

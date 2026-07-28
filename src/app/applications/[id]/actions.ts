@@ -49,6 +49,7 @@ import { logger, errorContext } from "@/lib/logger";
 export async function updateApplicationStatusAction(
   applicationId: string,
   status: ApplicationStatus,
+  notes?: string,
 ) {
   const user = await requireUser();
   const log = logger.child({
@@ -65,14 +66,18 @@ export async function updateApplicationStatusAction(
 
   if (application.status !== status) {
     await updateStatus(applicationId, user.id, status);
+    const trimmedNotes = notes?.trim();
     await saveOutcome({
       applicationId,
       stage: STATUS_LABELS[status],
-      notes: `Status changed from ${STATUS_LABELS[application.status]} to ${STATUS_LABELS[status]}.`,
+      notes: trimmedNotes
+        ? trimmedNotes
+        : `Status changed from ${STATUS_LABELS[application.status]} to ${STATUS_LABELS[status]}.`,
     });
     log.info("Application status changed", {
       from: application.status,
       to: status,
+      hasNotes: Boolean(trimmedNotes),
     });
   }
 

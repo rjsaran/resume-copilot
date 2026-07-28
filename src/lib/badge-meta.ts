@@ -53,6 +53,7 @@ export { isRecommendationStatus };
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   ANALYZED: "Analyzed",
+  NOT_APPLIED: "Not Applied",
   APPLIED: "Applied",
   RECRUITER_CALL: "Recruiter Call",
   INTERVIEW: "Interview",
@@ -63,6 +64,7 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
 
 export const STATUS_BADGE_CLASSNAME: Record<ApplicationStatus, string> = {
   ANALYZED: "bg-secondary text-secondary-foreground",
+  NOT_APPLIED: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
   APPLIED: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
   RECRUITER_CALL: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
   INTERVIEW: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
@@ -73,6 +75,7 @@ export const STATUS_BADGE_CLASSNAME: Record<ApplicationStatus, string> = {
 
 export const ALL_APPLICATION_STATUSES: ApplicationStatus[] = [
   "ANALYZED",
+  "NOT_APPLIED",
   "APPLIED",
   "RECRUITER_CALL",
   "INTERVIEW",
