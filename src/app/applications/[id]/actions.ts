@@ -6,6 +6,7 @@ import {
   getApplication,
   saveOutcome,
   updateStatus,
+  deleteApplication,
 } from "@/lib/repositories/applicationRepository";
 import { STATUS_LABELS } from "@/lib/badge-meta";
 import {
@@ -79,6 +80,38 @@ export async function updateApplicationStatusAction(
 
   revalidatePath(`/applications/${applicationId}`);
   revalidatePath("/applications");
+}
+
+export interface DeleteApplicationResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Deletes an application and, via DB-level cascade (see schema.ts), its
+ * analysis, AI/MANUAL resume versions, cover letter versions, and outcomes
+ * along with it. Irreversible.
+ */
+export async function deleteApplicationAction(
+  applicationId: string,
+): Promise<DeleteApplicationResult> {
+  const user = await requireUser();
+  const log = logger.child({
+    action: "deleteApplicationAction",
+    userId: user.id,
+    applicationId,
+  });
+
+  const deleted = await deleteApplication(applicationId, user.id);
+  if (!deleted) {
+    log.warn("Application delete blocked: not found or not owned by user");
+    return { success: false, error: "Application not found." };
+  }
+
+  log.info("Application deleted");
+  revalidatePath("/applications");
+
+  return { success: true };
 }
 
 export interface GenerateTailoredResumeResult {

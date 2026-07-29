@@ -8,6 +8,7 @@ import { MatchScoreExplainer } from "@/components/job-analysis/MatchScoreExplain
 import { StrengthsCard } from "@/components/job-analysis/StrengthsCard";
 import { RequirementCoverage } from "@/components/job-analysis/RequirementCoverage";
 import { StatusSelect } from "@/components/status-select";
+import { DeleteApplicationButton } from "@/components/delete-application-button";
 import { TailoredResumePanel } from "@/components/tailored-resume-panel";
 import { CoverLetterPanel } from "@/components/cover-letter-panel";
 import { JobDescriptionCard } from "@/components/job-description-card";
@@ -75,10 +76,13 @@ export default async function ApplicationDetailPage({
               View original posting
             </a>
           </div>
-          <StatusSelect
-            applicationId={application.id}
-            status={application.status}
-          />
+          <div className="flex items-center gap-2">
+            <StatusSelect
+              applicationId={application.id}
+              status={application.status}
+            />
+            <DeleteApplicationButton applicationId={application.id} />
+          </div>
         </div>
 
         {/* Verdict first: is this worth pursuing, and why - everything else

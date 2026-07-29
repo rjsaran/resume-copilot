@@ -157,3 +157,21 @@ export async function saveOutcome(input: SaveOutcomeInput) {
   const [outcome] = await db.insert(outcomes).values(input).returning();
   return outcome;
 }
+
+/**
+ * Deletes an application, ownership-checked. Its analysis, AI/MANUAL resume
+ * versions, cover letter versions, and outcomes all cascade at the DB level
+ * (see the onDelete: "cascade" foreign keys in schema.ts) - nothing else to
+ * delete here. Returns whether a row actually matched, so the caller can
+ * tell "already gone / not yours" apart from a real deletion.
+ */
+export async function deleteApplication(
+  id: string,
+  userId: string,
+): Promise<boolean> {
+  const deleted = await db
+    .delete(applications)
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
+    .returning({ id: applications.id });
+  return deleted.length > 0;
+}
