@@ -2,6 +2,12 @@
   "name": "resume-copilot",
   "version": "0.1.0",
   "private": true,
+  "description": "Tailor resumes and cover letters to job descriptions, track applications, and manage the whole search from one place.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rjsaran/resume-copilot.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

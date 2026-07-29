@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Resume Copilot
 
-## Getting Started
+Resume Copilot helps you tailor your resume and cover letter to a specific job description, track the resulting application, and manage your whole job search from one place.
 
-First, run the development server:
+Point it at a job posting and it will:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Analyze the fit** — score how well your resume matches the job description, surface covered/missing requirements, and highlight strengths and gaps.
+- **Tailor a resume** — generate a version of your resume adjusted for that job, with a diff view against your master resume so you can see exactly what changed.
+- **Draft a cover letter** — generate and edit a cover letter for the application.
+- **Export to PDF** — download the tailored resume and cover letter as polished PDFs.
+- **Track applications** — keep a board/table of applications with status, job description, and generated documents attached.
+- **Build a master resume** — maintain a personal knowledge base and generate a master resume from it on the fly.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Bring your own LLM API key (Google Gemini or OpenRouter today) — each user's key is encrypted at rest and used only for their own requests.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Next.js](https://nextjs.org) (App Router) + React + TypeScript
+- Postgres via [Drizzle ORM](https://orm.drizzle.team) (works with [Neon](https://neon.tech) or any Postgres-compatible database)
+- [Supabase](https://supabase.com) for authentication (Google OAuth)
+- Tailwind CSS + shadcn/ui components
+- Playwright + `@sparticuz/chromium` for server-side PDF rendering
 
-## Learn More
+> **Note:** this project pins Next.js/React versions that may include breaking changes ahead of their stable public APIs — see [AGENTS.md](./AGENTS.md).
 
-To learn more about Next.js, take a look at the following resources:
+## Getting started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Node.js 20+
+- A Postgres database (e.g. a free [Neon](https://neon.tech) project)
+- A [Supabase](https://supabase.com) project (for auth) with Google OAuth configured
+- An API key for at least one supported LLM provider ([Google Gemini](https://aistudio.google.com/apikey) or [OpenRouter](https://openrouter.ai/keys))
 
-## Deploy on Vercel
+### Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Clone the repo and install dependencies:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   git clone https://github.com/rjsaran/resume-copilot.git
+   cd resume-copilot
+   npm install
+   ```
+
+2. Copy the env template and fill in your own values:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   | Variable | Description |
+   | --- | --- |
+   | `DATABASE_URL` | Postgres connection string |
+   | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only, keep secret) |
+   | `ENCRYPTION_KEY` | Random 32+ byte secret used to encrypt each user's LLM API key at rest — generate with `openssl rand -base64 32` |
+   | `LOG_LEVEL` | Optional. `debug` \| `info` \| `warn` \| `error` |
+
+3. Push the schema to your database:
+
+   ```bash
+   npm run db:push
+   ```
+
+4. Run the dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000). Sign in with Google, then add your LLM API key under **Settings**.
+
+### Scripts
+
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run start` | Run a production build |
+| `npm run lint` | Lint the codebase |
+| `npm run db:push` | Push the Drizzle schema to `DATABASE_URL` (from `.env`/`.env.local`) |
+| `npm run db:push:prod` | Push the schema using `.env.production` |
+
+## Deployment
+
+The app is set up to deploy on [Vercel](https://vercel.com) — see `vercel.json` for the PDF export route's function configuration. Any Node.js host that supports Next.js should work; just make sure the environment variables above are set.
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get set up and submit changes.
+
+## License
+
+[MIT](./LICENSE)
