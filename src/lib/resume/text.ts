@@ -1,12 +1,16 @@
+import { filterVisibleResumeData } from "@/lib/resume/visibility";
 import type { ResumeData } from "@/types/resume";
 
 /**
  * Flattens structured resume data into readable plain text, purely for
  * line-based diffing (see ResumeDiffViewer). This is NOT a rendering path -
  * the renderer never consumes this; it exists only so two ResumeData
- * snapshots can be compared line by line.
+ * snapshots can be compared line by line. Filtered through the same
+ * visibility rules as the renderer, so a hidden entry shows up as a removal
+ * in the diff rather than as unchanged content that silently isn't exported.
  */
-export function resumeToPlainText(resume: ResumeData): string {
+export function resumeToPlainText(resumeInput: ResumeData): string {
+  const resume = filterVisibleResumeData(resumeInput);
   const lines: string[] = [];
 
   lines.push(resume.basics.name);

@@ -20,9 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { isJobAnalysis } from "@/types/analysis";
-import { isResumeData } from "@/types/resume";
 import { isCoverLetterData } from "@/types/coverLetter";
-import type { ResumeVersionDTO } from "@/components/tailored-resume-panel";
 import type { CoverLetterVersionDTO } from "@/components/cover-letter-panel";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +51,7 @@ export default async function ApplicationDetailPage({
 
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-16 dark:bg-black sm:px-8">
-      <main className="flex w-full max-w-4xl flex-col gap-6">
+      <main className="flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/applications"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline"
@@ -101,24 +99,15 @@ export default async function ApplicationDetailPage({
         <div id="tailored-resume" className="scroll-mt-20">
           <TailoredResumePanel
             applicationId={application.id}
-            initialVersions={application.resumeVersions.reduce<
-              ResumeVersionDTO[]
-            >((acc, version) => {
-              try {
-                const parsed = JSON.parse(version.resumeJson);
-                if (isResumeData(parsed)) {
-                  acc.push({
-                    id: version.id,
-                    name: version.name,
-                    type: version.type,
-                    resume: parsed,
-                  });
-                }
-              } catch {
-                // Skip versions with corrupt JSON rather than crashing the page.
-              }
-              return acc;
-            }, [])}
+            versions={application.resumeVersions
+              // Legacy MASTER rows are retired - none should remain post-migration.
+              .filter((version) => version.type !== "MASTER")
+              .map((version) => ({
+                id: version.id,
+                name: version.name,
+                type: version.type,
+                updatedAt: version.updatedAt,
+              }))}
           />
         </div>
 

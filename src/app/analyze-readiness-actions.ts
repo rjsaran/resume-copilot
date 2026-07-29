@@ -2,12 +2,12 @@
 
 import { requireUser } from "@/lib/auth";
 import { getUserSettings } from "@/lib/repositories/userSettingsRepository";
-import { getKnowledgeBase } from "@/lib/repositories/knowledgeBaseRepository";
+import { getBaseResume } from "@/lib/repositories/resumeRepository";
 import { ENCRYPTED_KEY_BY_PROVIDER } from "@/services/llm/userProvider";
 
 export interface AnalyzeReadiness {
   hasApiKey: boolean;
-  hasKnowledgeBase: boolean;
+  hasBaseResume: boolean;
 }
 
 /**
@@ -15,22 +15,17 @@ export interface AnalyzeReadiness {
  * layout load - the launcher lives in the root layout so it's available on
  * every page, but a layout's data fetch doesn't automatically re-run on
  * client-side navigation, so a stale "not ready" from before the user added
- * their API key or knowledge base would otherwise stick around all session.
+ * their API key or base resume would otherwise stick around all session.
  */
 export async function getAnalyzeReadinessAction(): Promise<AnalyzeReadiness> {
   const user = await requireUser();
   const settings = await getUserSettings(user.id);
 
-  let hasKnowledgeBase = false;
-  try {
-    hasKnowledgeBase = Boolean(await getKnowledgeBase(user.id));
-  } catch {
-    hasKnowledgeBase = false;
-  }
+  const hasBaseResume = Boolean(await getBaseResume(user.id));
 
   const hasApiKey = Boolean(
     settings && settings[ENCRYPTED_KEY_BY_PROVIDER[settings.activeProvider]],
   );
 
-  return { hasApiKey, hasKnowledgeBase };
+  return { hasApiKey, hasBaseResume };
 }

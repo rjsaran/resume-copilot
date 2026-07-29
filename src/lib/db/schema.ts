@@ -21,9 +21,23 @@ export const applicationStatusEnum = pgEnum("application_status", [
   "WITHDRAWN",
 ]);
 
+/**
+ * MASTER and TAILORED are retired (kept only so existing rows keep parsing).
+ * BASE and PUBLIC replace the old knowledge_bases table: BASE is the single,
+ * rich, uncapped source resume everything else is tailored from - exactly
+ * one per user (see the partial unique index on the resumeVersions table).
+ * PUBLIC resumes are short, manually-curated resumes for job boards,
+ * independent of any application - a user can have any number of them.
+ * AI/MANUAL are per-application tailored resumes, also unlimited per
+ * application.
+ */
 export const resumeVersionTypeEnum = pgEnum("resume_version_type", [
   "MASTER",
   "TAILORED",
+  "AI",
+  "MANUAL",
+  "BASE",
+  "PUBLIC",
 ]);
 
 export const llmProviderEnum = pgEnum("llm_provider", [
@@ -99,16 +113,28 @@ export const resumeVersions = pgTable(
     id: varchar("id")
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    applicationId: varchar("application_id")
-      .notNull()
-      .references(() => applications.id, { onDelete: "cascade" }),
+    // Direct ownership - BASE/PUBLIC rows have no application to derive it
+    // from, unlike AI/MANUAL rows which also belong to one.
+    userId: text("user_id").notNull(),
+    // Null for BASE/PUBLIC; set for AI/MANUAL (and legacy MASTER/TAILORED).
+    applicationId: varchar("application_id").references(() => applications.id, {
+      onDelete: "cascade",
+    }),
     name: text("name").notNull(),
     type: resumeVersionTypeEnum("type").notNull(),
     resumeJson: text("resume_json").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => [index("resume_versions_application_id").on(table.applicationId)],
+  (table) => [
+    index("resume_versions_application_id").on(table.applicationId),
+    index("resume_versions_user_id").on(table.userId),
+    // Only BASE is a singleton - a user can have any number of PUBLIC
+    // resumes (and any number of AI/MANUAL ones per application).
+    uniqueIndex("resume_versions_user_base_unique")
+      .on(table.userId)
+      .where(sql`${table.type} = 'BASE'`),
+  ],
 );
 
 export const resumeVersionsRelations = relations(resumeVersions, ({ one }) => ({
@@ -244,6 +270,25 @@ export const knowledgeBases = pgTable("knowledge_bases", {
   dataJson: text("data_json").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Short-lived rows backing PDF/preview export of a resume draft that hasn't
+ * been saved as a real ResumeVersion - the render route
+ * (/resumes/render/[id]/preview) reads one of these by id instead of a
+ * resume_versions row, so Playwright's page-navigation PDF pipeline can be
+ * reused unchanged for unsaved content. Each row is deleted right after the
+ * PDF is generated (see /api/resume/render/pdf) - this table is not a
+ * queue, just a way to hand data to a page navigation without persisting it
+ * as a resume.
+ */
+export const resumeRenderCache = pgTable("resume_render_cache", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  resumeJson: text("resume_json").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export type Application = typeof applications.$inferSelect;

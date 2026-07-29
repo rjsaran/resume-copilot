@@ -23,6 +23,8 @@ export interface ExperienceKnowledge {
   summary?: string;
   achievements: string[];
   technologies?: string[];
+  /** Excluded from the Base Resume, AI tailoring input, and the job-board Master Resume - kept in the knowledge base for later reuse rather than deleted. */
+  hidden?: boolean;
 }
 
 export interface ProjectKnowledge {
@@ -36,6 +38,8 @@ export interface ProjectKnowledge {
   url?: string;
   startDate?: string;
   endDate?: string;
+  /** Excluded from the Base Resume, AI tailoring input, and the job-board Master Resume - kept in the knowledge base for later reuse rather than deleted. */
+  hidden?: boolean;
 }
 
 export interface EducationKnowledge {
@@ -47,12 +51,23 @@ export interface EducationKnowledge {
   endDate?: string;
   gpa?: string;
   notes?: string[];
+  /** Excluded from the Base Resume, AI tailoring input, and the job-board Master Resume - kept in the knowledge base for later reuse rather than deleted. */
+  hidden?: boolean;
 }
 
 export interface TechnologyCategory {
   category: string;
   items: string[];
+  /** Excluded from the Base Resume, AI tailoring input, and the job-board Master Resume - kept in the knowledge base for later reuse rather than deleted. */
+  hidden?: boolean;
 }
+
+/** A whole section hidden at once, regardless of its individual items' own `hidden` flags. */
+export type KnowledgeBaseSectionKey =
+  | "experience"
+  | "projects"
+  | "education"
+  | "technologies";
 
 /**
  * The full career truth source: every job, project, skill, and education
@@ -67,6 +82,8 @@ export interface CareerKnowledgeBase {
   projects: ProjectKnowledge[];
   technologies: TechnologyCategory[];
   education: EducationKnowledge[];
+  /** Whole sections hidden from the Base Resume/AI tailoring/Master Resume, independent of any per-item hidden flags. */
+  hiddenSections?: KnowledgeBaseSectionKey[];
 }
 
 const STRING_ARRAY_SCHEMA = {

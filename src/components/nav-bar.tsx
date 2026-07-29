@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutList, Sparkles, BookUser, Bot, LogOut } from "lucide-react";
+import { LayoutList, Sparkles, FileText, Bot, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -17,6 +17,7 @@ import {
 
 const NAV_ITEMS = [
   { href: "/applications", label: "Applications", icon: LayoutList },
+  { href: "/resumes", label: "Resumes", icon: FileText },
 ] as const;
 
 interface NavBarProps {
@@ -31,10 +32,11 @@ function initialsFromEmail(email: string): string {
 export function NavBar({ userEmail, onSignOut }: NavBarProps) {
   const pathname = usePathname();
 
-  // The resume preview route is opened in its own tab as a clean,
-  // print-ready document (it's also the exact URL Playwright captures for
-  // PDF export) - it should never show app chrome, on screen or on paper.
-  if (pathname.includes("/resume/") && pathname.endsWith("/preview")) {
+  // Resume and cover letter preview routes are opened in their own tab as
+  // clean, print-ready documents (they're also the exact URLs Playwright
+  // captures for PDF export) - they should never show app chrome, on
+  // screen or on paper.
+  if (pathname.endsWith("/preview")) {
     return null;
   }
 
@@ -86,10 +88,6 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
                   {userEmail}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuLinkItem render={<Link href="/knowledge-base" />}>
-                  <BookUser />
-                  Knowledge Base
-                </DropdownMenuLinkItem>
                 <DropdownMenuLinkItem render={<Link href="/settings" />}>
                   <Bot />
                   AI Settings

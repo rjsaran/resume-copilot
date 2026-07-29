@@ -11,6 +11,7 @@ import { Projects } from "@/components/resume/sections/Projects";
 import { Skills } from "@/components/resume/sections/Skills";
 import { Education } from "@/components/resume/sections/Education";
 import { Divider } from "@/components/resume/sections/Divider";
+import { filterVisibleResumeData } from "@/lib/resume/visibility";
 import { cn } from "@/lib/utils";
 import type { ResumeData } from "@/types/resume";
 
@@ -30,16 +31,17 @@ export function Resume({
   className?: string;
 }) {
   const theme = resolveResumeTheme(themeId);
+  const visible = filterVisibleResumeData(data);
 
   return (
     <div className={cn(theme.classes.page, resumeFont.className, className)}>
-      <Header theme={theme} basics={data.basics} />
+      <Header theme={theme} basics={visible.basics} />
       <Divider theme={theme} />
-      <Summary theme={theme} summary={data.basics.summary} />
-      <Experience theme={theme} entries={data.experience} />
-      <Projects theme={theme} entries={data.projects} />
-      <Skills theme={theme} skills={data.skills} />
-      <Education theme={theme} entries={data.education} />
+      <Summary theme={theme} summary={visible.basics.summary} />
+      <Experience theme={theme} entries={visible.experience} />
+      <Projects theme={theme} entries={visible.projects} />
+      <Skills theme={theme} skills={visible.skills} />
+      <Education theme={theme} entries={visible.education} />
     </div>
   );
 }

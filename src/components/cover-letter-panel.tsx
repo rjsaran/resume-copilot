@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { CoverLetter } from "@/components/coverLetter/CoverLetter";
 import { CoverLetterEditor } from "@/components/coverLetter/cover-letter-editor";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import {
   generateCoverLetterAction,
@@ -78,6 +79,7 @@ export function CoverLetterPanel({
   const [copied, setCopied] = useState(false);
   const [isGenerating, startGenerate] = useTransition();
   const [isSaving, startSave] = useTransition();
+  const [confirmRegenerateOpen, setConfirmRegenerateOpen] = useState(false);
 
   const selectedVersion = useMemo(
     () => versions.find((v) => v.id === selectedVersionId) ?? null,
@@ -100,15 +102,14 @@ export function CoverLetterPanel({
     // another AI call and adds yet another version to keep around) is easy
     // to trigger by accident with nothing actually changed since last time,
     // so ask before spending it.
-    if (
-      versions.length > 0 &&
-      !window.confirm(
-        "Regenerate the cover letter? This uses another AI call and adds a new version.",
-      )
-    ) {
+    if (versions.length > 0) {
+      setConfirmRegenerateOpen(true);
       return;
     }
+    runGenerate();
+  }
 
+  function runGenerate() {
     setError(null);
     startGenerate(async () => {
       const result = await generateCoverLetterAction(applicationId);
@@ -347,6 +348,19 @@ export function CoverLetterPanel({
           </CardContent>
         </CollapsibleContent>
       </Card>
+
+      <ConfirmDialog
+        open={confirmRegenerateOpen}
+        onOpenChange={setConfirmRegenerateOpen}
+        title="Regenerate the cover letter?"
+        description="This uses another AI call and adds a new version."
+        confirmLabel="Regenerate"
+        isLoading={isGenerating}
+        onConfirm={() => {
+          setConfirmRegenerateOpen(false);
+          runGenerate();
+        }}
+      />
     </Collapsible>
   );
 }

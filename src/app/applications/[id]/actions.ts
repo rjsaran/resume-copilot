@@ -9,11 +9,8 @@ import {
 } from "@/lib/repositories/applicationRepository";
 import { STATUS_LABELS } from "@/lib/badge-meta";
 import {
-  countResumeVersionsByType,
+  countResumeVersionsForApplication,
   createResumeVersion,
-  getLatestResumeVersionByType,
-  getResumeVersion,
-  updateResumeVersion,
 } from "@/lib/repositories/resumeRepository";
 import {
   generateTailoredResume,
@@ -30,14 +27,13 @@ import {
   CoverLetterGeneratorError,
 } from "@/services/coverLetter/coverLetterGenerator";
 import {
-  requireKnowledgeBase,
-  KnowledgeBaseError,
-} from "@/lib/repositories/knowledgeBaseRepository";
-import { careerKnowledgeBaseToResumeData } from "@/lib/resume/knowledgeBaseToResumeData";
+  requireBaseResumeData,
+  BaseResumeError,
+} from "@/lib/repositories/resumeRepository";
 import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
 import { isJobAnalysis } from "@/types/analysis";
-import { isResumeData, type ResumeData } from "@/types/resume";
+import type { ResumeData } from "@/types/resume";
 import { isCoverLetterData, type CoverLetterData } from "@/types/coverLetter";
 import type {
   ApplicationStatus,
@@ -89,13 +85,12 @@ export interface GenerateTailoredResumeResult {
   success: boolean;
   error?: string;
   resumeVersion?: ResumeVersion;
-  masterVersion?: ResumeVersion;
 }
 
 /**
- * Generates a new tailored resume version for an application:
+ * Generates a new AI-tailored resume version for an application:
  *
- *   Career Knowledge Base (full JSON, per user)
+ *   Base Resume (full JSON, per user)
  *     + Job Description + Analysis JSON
  *   -> user's LLM provider selects & rewords a subset -> tailored_resume.json -> new ResumeVersion row
  *
@@ -146,17 +141,17 @@ export async function generateTailoredResumeAction(
     };
   }
 
-  let careerKnowledgeBase;
+  let baseResume;
   try {
-    careerKnowledgeBase = await requireKnowledgeBase(user.id);
+    baseResume = await requireBaseResumeData(user.id);
   } catch (error) {
-    log.warn("Tailoring blocked: no knowledge base", errorContext(error));
+    log.warn("Tailoring blocked: no base resume", errorContext(error));
     return {
       success: false,
       error:
-        error instanceof KnowledgeBaseError
+        error instanceof BaseResumeError
           ? error.message
-          : "Failed to load your career knowledge base.",
+          : "Failed to load your base resume.",
     };
   }
 
@@ -177,27 +172,11 @@ export async function generateTailoredResumeAction(
     };
   }
 
-  // A full, untailored projection of the knowledge base is snapshotted once
-  // per application as a MASTER version, purely for reference/diffing - the
-  // knowledge base itself (not this snapshot) is what tailoring reads from.
-  let masterVersion = await getLatestResumeVersionByType(
-    applicationId,
-    "MASTER",
-  );
-  if (!masterVersion) {
-    masterVersion = await createResumeVersion({
-      applicationId,
-      name: "Master Resume",
-      type: "MASTER",
-      resume: careerKnowledgeBaseToResumeData(careerKnowledgeBase),
-    });
-  }
-
   let tailoredResume: ResumeData;
   try {
     tailoredResume = await generateTailoredResume(
       {
-        careerKnowledgeBase,
+        baseResume,
         jobDescription: application.analysis.jdMarkdown,
         analysis: analysisData,
       },
@@ -217,14 +196,12 @@ export async function generateTailoredResumeAction(
     };
   }
 
-  const tailoredCount = await countResumeVersionsByType(
-    applicationId,
-    "TAILORED",
-  );
+  const versionCount = await countResumeVersionsForApplication(applicationId);
   const resumeVersion = await createResumeVersion({
+    userId: user.id,
     applicationId,
-    name: `Tailored v${tailoredCount + 1}`,
-    type: "TAILORED",
+    name: `${application.company} V${versionCount + 1}`,
+    type: "AI",
     resume: tailoredResume,
   });
 
@@ -235,53 +212,60 @@ export async function generateTailoredResumeAction(
 
   revalidatePath(`/applications/${applicationId}`);
 
-  return { success: true, resumeVersion, masterVersion };
+  return { success: true, resumeVersion };
 }
 
-export interface UpdateResumeVersionResult {
+export interface CreateManualResumeVersionResult {
   success: boolean;
   error?: string;
   resumeVersion?: ResumeVersion;
 }
 
 /**
- * Persists a direct user edit to a resume version's content. Mutates that
- * version in place (it is not a new generation), and the preview reflects
- * the edit immediately on the client before this even resolves.
+ * Creates a new manual (non-AI) resume version for an application, seeded
+ * from the user's current base resume - the non-AI counterpart to
+ * generateTailoredResumeAction. Trimming/reordering/rewording it by hand
+ * happens afterward on the resume's own detail page (/resumes/[id]), not
+ * here; this action only creates the starting point and hands back its id
+ * so the caller can navigate there.
  */
-export async function updateResumeVersionAction(
+export async function createManualResumeVersionAction(
   applicationId: string,
-  versionId: string,
-  resume: ResumeData,
-): Promise<UpdateResumeVersionResult> {
+): Promise<CreateManualResumeVersionResult> {
   const user = await requireUser();
   const log = logger.child({
-    action: "updateResumeVersionAction",
+    action: "createManualResumeVersionAction",
     userId: user.id,
     applicationId,
-    versionId,
   });
 
-  const existing = await getResumeVersion(versionId);
-  if (!existing || existing.application.userId !== user.id) {
-    log.warn(
-      "Resume version edit blocked: version not found or not owned by user",
-    );
-    return { success: false, error: "Resume version not found." };
+  const application = await getApplication(applicationId, user.id);
+  if (!application) {
+    log.warn("Manual resume creation blocked: application not found");
+    return { success: false, error: "Application not found." };
   }
 
-  if (!isResumeData(resume)) {
-    log.warn(
-      "Resume version edit blocked: payload did not match expected shape",
-    );
+  let baseResume;
+  try {
+    baseResume = await requireBaseResumeData(user.id);
+  } catch (error) {
+    log.warn("Manual resume creation blocked: no base resume", errorContext(error));
     return {
       success: false,
-      error: "Resume data did not match the expected shape.",
+      error: error instanceof BaseResumeError ? error.message : "Failed to load your base resume.",
     };
   }
 
-  const resumeVersion = await updateResumeVersion({ id: versionId, resume });
-  log.info("Resume version edited");
+  const versionCount = await countResumeVersionsForApplication(applicationId);
+  const resumeVersion = await createResumeVersion({
+    userId: user.id,
+    applicationId,
+    name: `${application.company} V${versionCount + 1}`,
+    type: "MANUAL",
+    resume: baseResume,
+  });
+
+  log.info("Manual resume version created", { resumeVersionId: resumeVersion.id });
   revalidatePath(`/applications/${applicationId}`);
 
   return { success: true, resumeVersion };
@@ -296,14 +280,12 @@ export interface GenerateCoverLetterResult {
 /**
  * Generates a new cover letter version for an application:
  *
- *   Career Knowledge Base (full JSON, per user)
+ *   Base Resume (full JSON, per user)
  *     + Job Description + Analysis JSON
  *   -> user's LLM provider writes a tailored letter -> cover_letter.json -> new CoverLetterVersion row
  *
  * The model only ever sees/produces CoverLetterData JSON - never Markdown or
  * HTML. Always creates a new version; never overwrites a previous one.
- * Unlike resumes, there is no MASTER snapshot - a cover letter has no
- * untailored baseline to diff against.
  */
 export async function generateCoverLetterAction(
   applicationId: string,
@@ -346,20 +328,20 @@ export async function generateCoverLetterAction(
     };
   }
 
-  let careerKnowledgeBase;
+  let baseResume;
   try {
-    careerKnowledgeBase = await requireKnowledgeBase(user.id);
+    baseResume = await requireBaseResumeData(user.id);
   } catch (error) {
     log.warn(
-      "Cover letter generation blocked: no knowledge base",
+      "Cover letter generation blocked: no base resume",
       errorContext(error),
     );
     return {
       success: false,
       error:
-        error instanceof KnowledgeBaseError
+        error instanceof BaseResumeError
           ? error.message
-          : "Failed to load your career knowledge base.",
+          : "Failed to load your base resume.",
     };
   }
 
@@ -384,7 +366,7 @@ export async function generateCoverLetterAction(
   try {
     coverLetter = await generateCoverLetter(
       {
-        careerKnowledgeBase,
+        baseResume,
         jobDescription: application.analysis.jdMarkdown,
         analysis: analysisData,
         company: application.company,

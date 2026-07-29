@@ -25,13 +25,13 @@ export async function GET(
 
   const version = await getResumeVersion(versionId);
 
-  if (!version || version.application.userId !== user.id) {
+  if (!version || version.userId !== user.id) {
     log.warn("PDF export blocked: resume version not found or not owned by user");
     return NextResponse.json({ error: "Resume version not found." }, { status: 404 });
   }
 
   const previewUrl = new URL(
-    `/applications/${version.applicationId}/resume/${version.id}/preview`,
+    `/resumes/${version.id}/preview`,
     request.nextUrl.origin
   );
 

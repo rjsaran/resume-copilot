@@ -85,7 +85,7 @@ function Fab({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        "fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-4 py-3.5 text-sm font-medium shadow-lg shadow-black/10 transition-all hover:scale-[1.03] active:scale-[0.98]",
+        "fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-medium shadow-lg shadow-black/10 transition-all hover:scale-[1.03] active:scale-[0.98]",
         isError
           ? "bg-red-600 text-white hover:bg-red-600/90"
           : isAlert
@@ -143,7 +143,7 @@ export function AnalyzeLauncher() {
   }
   if (pathname === "/sign-in") return null;
 
-  const isReady = Boolean(readiness?.hasApiKey && readiness?.hasKnowledgeBase);
+  const isReady = Boolean(readiness?.hasApiKey && readiness?.hasBaseResume);
   const copy = DIALOG_COPY[phase];
 
   return (
@@ -182,14 +182,14 @@ export function AnalyzeLauncher() {
                           <ArrowRight className="size-3.5" />
                         </Link>
                       )}
-                      {!readiness.hasKnowledgeBase && (
+                      {!readiness.hasBaseResume && (
                         <Link
-                          href="/knowledge-base"
+                          href="/resumes"
                           onClick={closeLauncher}
                           className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-background px-3 py-2 text-sm font-medium hover:bg-amber-500/10"
                         >
                           <BookUser className="size-4 text-amber-600 dark:text-amber-400" />
-                          Add your knowledge base
+                          Add your base resume
                           <ArrowRight className="size-3.5" />
                         </Link>
                       )}

@@ -18,6 +18,8 @@ export interface ExperienceEntry {
   endDate: string;
   bullets: string[];
   technologies?: string[];
+  /** Excluded from render/export/diff while editing - lets a user toggle an entry off without losing its content. */
+  hidden?: boolean;
 }
 
 export interface ProjectEntry {
@@ -26,6 +28,8 @@ export interface ProjectEntry {
   location?: string;
   bullets: string[];
   technologies?: string[];
+  /** Excluded from render/export/diff while editing - lets a user toggle an entry off without losing its content. */
+  hidden?: boolean;
 }
 
 export interface SkillsData {
@@ -45,7 +49,12 @@ export interface EducationEntry {
   endDate?: string;
   gpa?: string;
   notes?: string[];
+  /** Excluded from render/export/diff while editing - lets a user toggle an entry off without losing its content. */
+  hidden?: boolean;
 }
+
+/** A whole section hidden at once, regardless of its individual entries' own `hidden` flags. */
+export type ResumeSectionKey = "experience" | "projects" | "education" | "skills";
 
 /**
  * The canonical resume schema. This is the ONLY shape that ever flows
@@ -59,11 +68,21 @@ export interface ResumeData {
   projects: ProjectEntry[];
   skills: SkillsData;
   education: EducationEntry[];
+  /** Whole sections hidden from render/export/diff, independent of any per-entry hidden flags. */
+  hiddenSections?: ResumeSectionKey[];
 }
 
 const STRING_ARRAY_SCHEMA = {
   type: "array",
   items: { type: "string" },
+} as const;
+
+const DATE_FIELD_SCHEMA = {
+  type: "string",
+  maxLength: 24,
+  description:
+    "Copy exactly as written in the Career Knowledge Base (e.g. '2011', '2011-07', 'Jul 2011', 'Present'). " +
+    "A date/label only - never commentary, reasoning, or any other text.",
 } as const;
 
 /**
@@ -97,8 +116,8 @@ export const RESUME_JSON_SCHEMA = {
           company: { type: "string" },
           role: { type: "string" },
           location: { type: "string" },
-          startDate: { type: "string" },
-          endDate: { type: "string" },
+          startDate: DATE_FIELD_SCHEMA,
+          endDate: DATE_FIELD_SCHEMA,
           bullets: STRING_ARRAY_SCHEMA,
           technologies: STRING_ARRAY_SCHEMA,
         },
@@ -138,9 +157,9 @@ export const RESUME_JSON_SCHEMA = {
           institution: { type: "string" },
           degree: { type: "string" },
           location: { type: "string" },
-          startDate: { type: "string" },
-          endDate: { type: "string" },
-          gpa: { type: "string" },
+          startDate: DATE_FIELD_SCHEMA,
+          endDate: DATE_FIELD_SCHEMA,
+          gpa: { type: "string", maxLength: 16, description: "GPA only, e.g. '3.8' or '3.8/4.0'." },
           notes: STRING_ARRAY_SCHEMA,
         },
         required: ["institution", "degree"],

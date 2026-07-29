@@ -11,7 +11,7 @@ export default async function ApplicationsPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-16 dark:bg-black sm:px-8">
-      <main className="flex w-full max-w-5xl flex-col gap-6">
+      <main className="flex w-full max-w-6xl flex-col gap-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">
             Applications

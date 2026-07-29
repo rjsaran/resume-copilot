@@ -7,10 +7,10 @@ import {
   upsertScrapedJobDescription,
 } from "@/lib/repositories/applicationRepository";
 import {
-  requireKnowledgeBase,
-  KnowledgeBaseError,
-} from "@/lib/repositories/knowledgeBaseRepository";
-import { careerKnowledgeBaseToText } from "@/lib/resume/careerKnowledgeBaseText";
+  requireBaseResumeData,
+  BaseResumeError,
+} from "@/lib/repositories/resumeRepository";
+import { resumeToPlainText } from "@/lib/resume/text";
 import { getUserLlmProvider } from "@/services/llm/userProvider";
 import { LLMProviderError } from "@/services/llm/types";
 import { analyzeJob, JobAnalysisError } from "@/services/analysis/jobAnalyzer";
@@ -153,19 +153,17 @@ async function handleAnalyze(
 
   let careerHistory: string;
   try {
-    careerHistory = careerKnowledgeBaseToText(
-      await requireKnowledgeBase(user.id),
-    );
+    careerHistory = resumeToPlainText(await requireBaseResumeData(user.id));
   } catch (error) {
-    log.warn("Analysis blocked: no knowledge base", errorContext(error));
+    log.warn("Analysis blocked: no base resume", errorContext(error));
     return NextResponse.json(
       {
         error:
-          error instanceof KnowledgeBaseError
+          error instanceof BaseResumeError
             ? error.message
-            : "Could not read your career knowledge base.",
+            : "Could not read your base resume.",
       },
-      { status: error instanceof KnowledgeBaseError ? 400 : 500 },
+      { status: error instanceof BaseResumeError ? 400 : 500 },
     );
   }
 

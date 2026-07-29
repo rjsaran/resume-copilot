@@ -1,4 +1,5 @@
 export interface JobAnalysisPromptInput {
+  /** Plain-text rendering of the candidate's Base Resume (see resumeToPlainText). */
   careerHistory: string;
   jobDescription: string;
 }
@@ -13,7 +14,7 @@ const SYSTEM_INSTRUCTION = [
   "",
   "Compare:",
   "",
-  "1. Candidate Career History - a condensed summary of every job, project, and skill the candidate has: role, company, dates, technologies, and a short one-line summary per entry. It deliberately omits full achievement detail (that level of detail is only used later, when actually building a tailored resume). Use it to judge fit - seniority, domain, technology overlap - not to quote from directly.",
+  "1. Candidate Career History - a plain-text rendering of the candidate's Base Resume: every job, project, skill, and education entry they've chosen to keep in it. Use it to judge fit - seniority, domain, technology overlap - not to quote from directly.",
   "2. Job Description",
   "",
   "Return JSON. Never invent experience - see the rule below.",
