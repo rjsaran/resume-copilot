@@ -33,7 +33,6 @@ export interface ResumeCardSummary {
   application?: { id: string; company: string; jobTitle: string } | null;
 }
 
-/** TAILORED is the retired name for what's now created as AI - treat both the same in the UI. */
 function originLabel(type: ResumeVersionType): string {
   switch (type) {
     case "MANUAL":

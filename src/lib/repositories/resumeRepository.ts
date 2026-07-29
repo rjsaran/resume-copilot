@@ -234,7 +234,6 @@ export function getTailoredResumes(userId: string): Promise<TailoredResumeSummar
     where: and(
       eq(resumeVersions.userId, userId),
       // AI/MANUAL only - excludes this user's own BASE/PUBLIC rows.
-      // (Legacy MASTER/TAILORED rows no longer exist post-migration.)
       or(eq(resumeVersions.type, "AI"), eq(resumeVersions.type, "MANUAL")),
     ),
     orderBy: [desc(resumeVersions.createdAt)],

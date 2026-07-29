@@ -99,15 +99,12 @@ export default async function ApplicationDetailPage({
         <div id="tailored-resume" className="scroll-mt-20">
           <TailoredResumePanel
             applicationId={application.id}
-            versions={application.resumeVersions
-              // Legacy MASTER rows are retired - none should remain post-migration.
-              .filter((version) => version.type !== "MASTER")
-              .map((version) => ({
-                id: version.id,
-                name: version.name,
-                type: version.type,
-                updatedAt: version.updatedAt,
-              }))}
+            versions={application.resumeVersions.map((version) => ({
+              id: version.id,
+              name: version.name,
+              type: version.type,
+              updatedAt: version.updatedAt,
+            }))}
           />
         </div>
 

@@ -13,11 +13,9 @@ interface ResumeContentEditorProps {
 }
 
 /**
- * The resume-editing counterpart to KnowledgeBaseEditor - same section
- * shells, same entry cards, same hide/collapse/drag-reorder behavior, just
- * over ResumeData's shape instead of CareerKnowledgeBase's. Used by the
- * tailored resume panel's Edit tab for both AI-tailored and manually-created
- * versions.
+ * Section shells, entry cards, and hide/collapse/drag-reorder behavior over
+ * ResumeData. Used by the tailored resume panel's Edit tab for both
+ * AI-tailored and manually-created versions.
  */
 export function ResumeContentEditor({ resume, onChange }: ResumeContentEditorProps) {
   function toggleSectionHidden(section: ResumeSectionKey) {

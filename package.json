@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:push:prod": "dotenv -e .env.production -- drizzle-kit push"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -44,6 +45,7 @@
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
     "dotenv": "^17.4.2",
+    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "15.5.22",

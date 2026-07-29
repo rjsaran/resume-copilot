@@ -76,10 +76,12 @@ export function ResumeDetailView({
   // Prefer where the user actually came from (the Resumes hub) over the
   // resume's own applicationId - a tailored resume opened from its hub card
   // should return to the hub, not force a detour through its application.
-  const backHref = cameFromResumes || !applicationId
-    ? "/resumes"
-    : `/applications/${applicationId}`;
-  const backLabel = backHref === "/resumes" ? "Back to Resumes" : "Back to application";
+  const backHref =
+    cameFromResumes || !applicationId
+      ? "/resumes"
+      : `/applications/${applicationId}`;
+  const backLabel =
+    backHref === "/resumes" ? "Back to Resumes" : "Back to application";
 
   function handleSave() {
     if (!draft) return;
@@ -147,7 +149,11 @@ export function ResumeDetailView({
               <Badge variant="outline">{typeLabel(type)}</Badge>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={handleSave} disabled={!hasUnsavedChanges || isSaving}>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges || isSaving}
+              >
                 {isSaving ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
@@ -156,10 +162,19 @@ export function ResumeDetailView({
                 Save changes
               </Button>
               <Button variant="outline" size="sm" onClick={handleCopy}>
-                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                {copied ? (
+                  <Check className="size-3.5" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
                 {copied ? "Copied" : "Copy JSON"}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={isExporting}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPdf}
+                disabled={isExporting}
+              >
                 {isExporting ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
@@ -178,8 +193,16 @@ export function ResumeDetailView({
 
           {canDiff && (
             <div className="flex gap-1 self-start rounded-md border p-0.5">
-              <ViewTab active={view === "edit"} onClick={() => setView("edit")} label="Edit" />
-              <ViewTab active={view === "diff"} onClick={() => setView("diff")} label="Diff vs Base Resume" />
+              <ViewTab
+                active={view === "edit"}
+                onClick={() => setView("edit")}
+                label="Edit"
+              />
+              <ViewTab
+                active={view === "diff"}
+                onClick={() => setView("diff")}
+                label="Diff"
+              />
             </div>
           )}
         </div>

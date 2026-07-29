@@ -22,18 +22,14 @@ export const applicationStatusEnum = pgEnum("application_status", [
 ]);
 
 /**
- * MASTER and TAILORED are retired (kept only so existing rows keep parsing).
- * BASE and PUBLIC replace the old knowledge_bases table: BASE is the single,
- * rich, uncapped source resume everything else is tailored from - exactly
- * one per user (see the partial unique index on the resumeVersions table).
- * PUBLIC resumes are short, manually-curated resumes for job boards,
- * independent of any application - a user can have any number of them.
- * AI/MANUAL are per-application tailored resumes, also unlimited per
- * application.
+ * BASE is the single, rich, uncapped source resume everything else is
+ * tailored from - exactly one per user (see the partial unique index on the
+ * resumeVersions table). PUBLIC resumes are short, manually-curated resumes
+ * for job boards, independent of any application - a user can have any
+ * number of them. AI/MANUAL are per-application tailored resumes, also
+ * unlimited per application.
  */
 export const resumeVersionTypeEnum = pgEnum("resume_version_type", [
-  "MASTER",
-  "TAILORED",
   "AI",
   "MANUAL",
   "BASE",
@@ -116,7 +112,7 @@ export const resumeVersions = pgTable(
     // Direct ownership - BASE/PUBLIC rows have no application to derive it
     // from, unlike AI/MANUAL rows which also belong to one.
     userId: text("user_id").notNull(),
-    // Null for BASE/PUBLIC; set for AI/MANUAL (and legacy MASTER/TAILORED).
+    // Null for BASE/PUBLIC; set for AI/MANUAL.
     applicationId: varchar("application_id").references(() => applications.id, {
       onDelete: "cascade",
     }),
@@ -145,9 +141,9 @@ export const resumeVersionsRelations = relations(resumeVersions, ({ one }) => ({
 }));
 
 /**
- * Unlike resume_versions, there is no MASTER/TAILORED distinction here - a
- * cover letter only ever exists tailored to one specific application, so
- * every row is equivalent in kind and differs only by generation/edit.
+ * Unlike resume_versions, there is no type distinction here - a cover letter
+ * only ever exists tailored to one specific application, so every row is
+ * equivalent in kind and differs only by generation/edit.
  */
 export const coverLetterVersions = pgTable(
   "cover_letter_versions",
@@ -258,21 +254,6 @@ export const userSettings = pgTable("user_settings", {
 });
 
 /**
- * One row per user: their full career knowledge base as JSON (see
- * types/careerKnowledgeBase.ts). Replaces the old single, file-based
- * resume/career_knowledge_base.json now that the app is multi-user.
- */
-export const knowledgeBases = pgTable("knowledge_bases", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  userId: text("user_id").notNull().unique(),
-  dataJson: text("data_json").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-/**
  * Short-lived rows backing PDF/preview export of a resume draft that hasn't
  * been saved as a real ResumeVersion - the render route
  * (/resumes/render/[id]/preview) reads one of these by id instead of a
@@ -301,4 +282,3 @@ export type Outcome = typeof outcomes.$inferSelect;
 export type ScrapedJobDescription = typeof scrapedJobDescriptions.$inferSelect;
 export type UserSettings = typeof userSettings.$inferSelect;
 export type LlmProvider = UserSettings["activeProvider"];
-export type KnowledgeBaseRow = typeof knowledgeBases.$inferSelect;

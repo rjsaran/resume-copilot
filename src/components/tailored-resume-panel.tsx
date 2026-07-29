@@ -46,7 +46,6 @@ export interface ResumeVersionSummary {
   updatedAt: Date;
 }
 
-/** TAILORED is the retired name for what's now created as AI - treat both the same in the UI. */
 function originLabel(type: ResumeVersionType): "AI" | "Manual" {
   return type === "MANUAL" ? "Manual" : "AI";
 }
