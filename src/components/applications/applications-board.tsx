@@ -83,7 +83,7 @@ export function ApplicationsBoard({
               )}
             >
               {columnApplications.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border/60 p-3 text-center text-xs text-muted-foreground">
+                <div className="rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
                   No applications
                 </div>
               ) : (

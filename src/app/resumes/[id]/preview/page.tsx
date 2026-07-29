@@ -48,7 +48,7 @@ export default async function ResumePreviewPage({
   }
 
   return (
-    <div className="flex justify-center bg-neutral-200 py-6 print:bg-white print:py-0 dark:bg-neutral-950">
+    <div className="flex justify-center bg-muted py-6 print:bg-white print:py-0">
       <Resume data={parsed} theme="classic" />
     </div>
   );

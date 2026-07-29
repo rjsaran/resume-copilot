@@ -50,7 +50,7 @@ export default async function ApplicationDetailPage({
     parsedAnalysis && isJobAnalysis(parsedAnalysis) ? parsedAnalysis : null;
 
   return (
-    <div className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-16 dark:bg-black sm:px-8">
+    <div className="flex flex-1 flex-col items-center bg-muted/30 px-4 py-16 sm:px-8">
       <main className="flex w-full max-w-6xl flex-col gap-6">
         <Link
           href="/applications"

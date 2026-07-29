@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutList, Sparkles, FileText, Bot, LogOut } from "lucide-react";
+import { useTheme } from "next-themes";
+import {
+  LayoutList,
+  Sparkles,
+  FileText,
+  Bot,
+  LogOut,
+  Sun,
+  Moon,
+  Monitor,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -13,7 +23,15 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
+
+const THEME_OPTIONS = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
+] as const;
 
 const NAV_ITEMS = [
   { href: "/applications", label: "Applications", icon: LayoutList },
@@ -31,6 +49,7 @@ function initialsFromEmail(email: string): string {
 
 export function NavBar({ userEmail, onSignOut }: NavBarProps) {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
 
   // Resume and cover letter preview routes are opened in their own tab as
   // clean, print-ready documents (they're also the exact URLs Playwright
@@ -45,7 +64,7 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-zinc-50/80 backdrop-blur print:hidden dark:bg-black/80">
+    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur print:hidden">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-8">
         <Link
           href="/applications"
@@ -92,6 +111,19 @@ export function NavBar({ userEmail, onSignOut }: NavBarProps) {
                   <Bot />
                   AI Settings
                 </DropdownMenuLinkItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={theme}
+                  onValueChange={(value) => setTheme(value as string)}
+                >
+                  {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+                    <DropdownMenuRadioItem key={value} value={value}>
+                      <Icon />
+                      {label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onSignOut()}>
                   <LogOut />

@@ -330,7 +330,7 @@ export function CoverLetterPanel({
                 )}
 
                 {view === "preview" && (
-                  <div className="flex justify-center overflow-x-auto rounded-md bg-neutral-100 py-6 dark:bg-neutral-900">
+                  <div className="flex justify-center overflow-x-auto rounded-md bg-muted py-6">
                     <CoverLetter data={activeCoverLetter} />
                   </div>
                 )}

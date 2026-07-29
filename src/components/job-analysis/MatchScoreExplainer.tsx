@@ -36,7 +36,7 @@ function ScoreMeterTile({
 }) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border/60 p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-muted-foreground">
           {label}

@@ -132,7 +132,7 @@ export function ResumeDetailView({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-16 dark:bg-black sm:px-8">
+    <div className="flex flex-1 flex-col items-center bg-muted/30 px-4 py-16 sm:px-8">
       <main className="flex w-full max-w-[90rem] flex-col gap-6">
         <div className="flex flex-col gap-3">
           <Link
@@ -220,7 +220,7 @@ export function ResumeDetailView({
               <ResumeContentEditor resume={activeResume} onChange={setDraft} />
             </div>
             <div className="xl:sticky xl:top-20 xl:self-start">
-              <div className="flex justify-center overflow-x-auto rounded-md bg-neutral-100 py-6 dark:bg-neutral-900">
+              <div className="flex justify-center overflow-x-auto rounded-md border border-border bg-muted">
                 <Resume data={activeResume} theme="classic" />
               </div>
             </div>
