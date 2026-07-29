@@ -138,7 +138,7 @@ export function AnalyzeLauncher() {
 
   // Same routes NavBar hides app chrome on: a print-ready document should
   // never show floating UI, on screen or on paper.
-  if (pathname.includes("/resume/") && pathname.endsWith("/preview")) {
+  if (pathname.endsWith("/preview")) {
     return null;
   }
   if (pathname === "/sign-in") return null;

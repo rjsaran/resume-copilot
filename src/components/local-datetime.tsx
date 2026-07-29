@@ -35,8 +35,16 @@ export function LocalDateTime({
   useEffect(() => {
     const d = new Date(timestamp);
     setFormatted({
-      date: d.toLocaleDateString(),
-      time: d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      date: d.toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+      time: d.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
     });
   }, [timestamp]);
 
