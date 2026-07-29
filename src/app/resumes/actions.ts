@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import {
-  getBaseResume,
   getResumeVersion,
   upsertBaseResume,
   createPublicResume,
   updateResumeVersion,
   renameResumeVersion,
   deleteResumeVersion,
+  dismissGenerationNote,
 } from "@/lib/repositories/resumeRepository";
 import {
   extractResumeTextFromPdf,
@@ -49,46 +49,29 @@ export async function saveBaseResumeAction(resume: ResumeData): Promise<SaveResu
   return { success: true, resumeVersion };
 }
 
-/** Creates a new public resume - a user can have any number of these, so this never overwrites an existing one. */
-export async function createPublicResumeAction(resume: ResumeData): Promise<SaveResumeResult> {
+/** Clones any resume (base or public) into a new public resume, seeded with the source's current content - a starting point the user then edits independently. */
+export async function cloneResumeAction(sourceId: string): Promise<SaveResumeResult> {
   const user = await requireUser();
-  const log = logger.child({ action: "createPublicResumeAction", userId: user.id });
+  const log = logger.child({ action: "cloneResumeAction", userId: user.id, sourceId });
 
-  if (!isResumeData(resume)) {
-    log.warn("Public resume creation blocked: payload did not match expected shape");
-    return { success: false, error: "Resume data did not match the expected shape." };
-  }
-
-  const resumeVersion = await createPublicResume(user.id, resume);
-  log.info("Public resume created");
-  revalidatePath("/resumes");
-
-  return { success: true, resumeVersion };
-}
-
-/** Creates a new public resume seeded from the current base resume - a starting point the user then trims down by hand. */
-export async function duplicateBaseToPublicAction(): Promise<SaveResumeResult> {
-  const user = await requireUser();
-  const log = logger.child({ action: "duplicateBaseToPublicAction", userId: user.id });
-
-  const base = await getBaseResume(user.id);
-  if (!base) {
-    log.warn("Duplicate-to-public blocked: no base resume");
-    return { success: false, error: "Create your base resume first." };
+  const source = await getResumeVersion(sourceId);
+  if (!source || source.userId !== user.id) {
+    log.warn("Clone blocked: source resume not found or not owned by user");
+    return { success: false, error: "Resume not found." };
   }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(base.resumeJson);
+    parsed = JSON.parse(source.resumeJson);
   } catch {
-    return { success: false, error: "Your stored base resume JSON is invalid." };
+    return { success: false, error: "That resume's stored JSON is invalid." };
   }
   if (!isResumeData(parsed)) {
-    return { success: false, error: "Your stored base resume did not match the expected shape." };
+    return { success: false, error: "That resume did not match the expected shape." };
   }
 
   const resumeVersion = await createPublicResume(user.id, parsed);
-  log.info("Public resume seeded from base resume");
+  log.info("Resume cloned", { sourceType: source.type });
   revalidatePath("/resumes");
 
   return { success: true, resumeVersion };
@@ -176,9 +159,8 @@ export interface UpdateAnyResumeResult {
 /**
  * Edits any existing resume in place by id - base, public, or tailored
  * alike. This is what the /resumes/[id] detail page's editor saves through;
- * creating a new base or public resume goes through
- * saveBaseResumeAction/createPublicResumeAction instead, since those don't
- * have an id yet the first time.
+ * creating a new base resume goes through saveBaseResumeAction instead,
+ * since that doesn't have an id yet the first time.
  */
 export async function updateResumeAction(
   id: string,
@@ -261,6 +243,23 @@ export async function deleteResumeAction(id: string): Promise<DeleteResumeResult
   if (existing.applicationId) {
     revalidatePath(`/applications/${existing.applicationId}`);
   }
+
+  return { success: true };
+}
+
+/** Clears a gap note once reviewed/folded into the Base Resume - the resume version itself is untouched. */
+export async function dismissGenerationNoteAction(id: string): Promise<DeleteResumeResult> {
+  const user = await requireUser();
+  const log = logger.child({ action: "dismissGenerationNoteAction", userId: user.id, resumeId: id });
+
+  const dismissed = await dismissGenerationNote(id, user.id);
+  if (!dismissed) {
+    log.warn("Dismiss note blocked: not found or not owned by user");
+    return { success: false, error: "Note not found." };
+  }
+
+  log.info("Generation note dismissed");
+  revalidatePath("/resumes");
 
   return { success: true };
 }

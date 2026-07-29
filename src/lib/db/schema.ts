@@ -57,8 +57,12 @@ export const applications = pgTable(
     status: applicationStatusEnum("status").notNull().default("ANALYZED"),
     overallScore: integer("overall_score").notNull(),
     verdict: text("verdict").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("applications_user_id_job_hash").on(
@@ -93,7 +97,9 @@ export const analyses = pgTable("analyses", {
   jdMarkdown: text("jd_markdown").notNull(),
   analysisJson: text("analysis_json").notNull(),
   model: text("model").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const analysesRelations = relations(analyses, ({ one }) => ({
@@ -119,8 +125,18 @@ export const resumeVersions = pgTable(
     name: text("name").notNull(),
     type: resumeVersionTypeEnum("type").notNull(),
     resumeJson: text("resume_json").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    // Set only when the user typed extra context/instructions for the AI at
+    // generation time (see resumeTailorPrompt.ts) - surfaced later as a punch
+    // list of gaps worth folding into the Base Resume permanently. Null for
+    // every other creation path (MANUAL, BASE, PUBLIC, or an AI generation
+    // with no message).
+    generationNote: text("generation_note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("resume_versions_application_id").on(table.applicationId),
@@ -156,8 +172,12 @@ export const coverLetterVersions = pgTable(
       .references(() => applications.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     coverLetterJson: text("cover_letter_json").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("cover_letter_versions_application_id").on(table.applicationId),
@@ -185,7 +205,9 @@ export const outcomes = pgTable(
       .references(() => applications.id, { onDelete: "cascade" }),
     stage: text("stage").notNull(),
     notes: text("notes"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [index("outcomes_application_id").on(table.applicationId)],
 );
@@ -217,8 +239,12 @@ export const scrapedJobDescriptions = pgTable(
     jobUrl: text("job_url").notNull(),
     jobHash: text("job_hash").notNull(),
     jdMarkdown: text("jd_markdown").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     uniqueIndex("scraped_job_descriptions_user_id_job_hash").on(
@@ -249,8 +275,12 @@ export const userSettings = pgTable("user_settings", {
   // Null means "use the provider's default model" - see DEFAULT_MODEL_BY_PROVIDER.
   geminiModel: text("gemini_model"),
   openRouterModel: text("openrouter_model"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 /**
@@ -269,7 +299,9 @@ export const resumeRenderCache = pgTable("resume_render_cache", {
     .default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull(),
   resumeJson: text("resume_json").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export type Application = typeof applications.$inferSelect;

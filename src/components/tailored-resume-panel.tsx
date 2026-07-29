@@ -31,6 +31,15 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { LocalDateTime } from "@/components/local-datetime";
 import { cn } from "@/lib/utils";
 import {
@@ -73,6 +82,8 @@ export function TailoredResumePanel({
     message: string;
     run: () => void;
   } | null>(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
 
   function runOrConfirm(message: string, run: () => void) {
     if (versions.length === 0) {
@@ -82,28 +93,32 @@ export function TailoredResumePanel({
     setConfirmAction({ message, run });
   }
 
-  function handleGenerateAi() {
+  function openAiDialog() {
     if (isGenerating) return; // guard against a double-click firing twice
-    runOrConfirm(
-      "Regenerate the tailored resume? This uses another AI call and adds a new version.",
-      () => {
-        setError(null);
-        startGenerate(async () => {
-          const result = await generateTailoredResumeAction(applicationId);
-          if (!result.success || !result.resumeVersion) {
-            setError(result.error ?? "Failed to generate tailored resume.");
-            return;
-          }
-          const created = result.resumeVersion;
-          setVersions((prev) => [
-            { id: created.id, name: created.name, type: created.type, updatedAt: created.updatedAt },
-            ...prev,
-          ]);
-          setOpen(true);
-          router.push(`/resumes/${created.id}`);
-        });
-      },
-    );
+    setAiMessage("");
+    setAiDialogOpen(true);
+  }
+
+  function handleGenerateAi() {
+    setAiDialogOpen(false);
+    setError(null);
+    startGenerate(async () => {
+      const result = await generateTailoredResumeAction(
+        applicationId,
+        aiMessage.trim() || undefined,
+      );
+      if (!result.success || !result.resumeVersion) {
+        setError(result.error ?? "Failed to generate tailored resume.");
+        return;
+      }
+      const created = result.resumeVersion;
+      setVersions((prev) => [
+        { id: created.id, name: created.name, type: created.type, updatedAt: created.updatedAt },
+        ...prev,
+      ]);
+      setOpen(true);
+      router.push(`/resumes/${created.id}`);
+    });
   }
 
   function handleCreateManual() {
@@ -160,7 +175,7 @@ export function TailoredResumePanel({
                 <ChevronDown className="size-3.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleGenerateAi} disabled={isGenerating}>
+                <DropdownMenuItem onClick={openAiDialog} disabled={isGenerating}>
                   <Sparkles />
                   Generate with AI
                 </DropdownMenuItem>
@@ -244,6 +259,47 @@ export function TailoredResumePanel({
           setConfirmAction(null);
         }}
       />
+
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {versions.length === 0 ? "Generate tailored resume" : "Regenerate tailored resume"}
+            </DialogTitle>
+            <DialogDescription>
+              {versions.length === 0
+                ? "The AI selects and rewords a subset of your base resume for this job."
+                : "This uses another AI call and adds a new version."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="ai-message" className="text-sm font-medium">
+              Anything the AI should know? (optional)
+            </label>
+            <Textarea
+              id="ai-message"
+              value={aiMessage}
+              onChange={(e) => setAiMessage(e.target.value)}
+              placeholder="e.g. I also have hands-on experience with Prometheus and Datadog, even though it's not in my base resume yet"
+              className="min-h-24 text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Treated as true, the same as your base resume - a good place to
+              mention real experience the analysis flagged as missing.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleGenerateAi} disabled={isGenerating}>
+              {isGenerating ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="size-3.5" />
+              )}
+              {versions.length === 0 ? "Generate" : "Regenerate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Collapsible>
   );
 }

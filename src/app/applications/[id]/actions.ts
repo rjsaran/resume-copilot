@@ -102,12 +102,14 @@ export interface GenerateTailoredResumeResult {
  */
 export async function generateTailoredResumeAction(
   applicationId: string,
+  message?: string,
 ): Promise<GenerateTailoredResumeResult> {
   const user = await requireUser();
   const log = logger.child({
     action: "generateTailoredResumeAction",
     userId: user.id,
     applicationId,
+    hasMessage: Boolean(message?.trim()),
   });
   const startedAt = Date.now();
 
@@ -179,6 +181,7 @@ export async function generateTailoredResumeAction(
         baseResume,
         jobDescription: application.analysis.jdMarkdown,
         analysis: analysisData,
+        additionalContext: message,
       },
       provider,
     );
@@ -203,6 +206,7 @@ export async function generateTailoredResumeAction(
     name: `${application.company} V${versionCount + 1}`,
     type: "AI",
     resume: tailoredResume,
+    note: message,
   });
 
   log.info("Tailored resume generated", {

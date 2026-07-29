@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Download, Loader2, Pencil, SquarePen, Trash2 } from "lucide-react";
+import { Copy, Download, Loader2, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -14,13 +14,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { LocalDateTime } from "@/components/local-datetime";
 import { renameResumeAction } from "@/app/resumes/actions";
 import type { ResumeVersionType } from "@/lib/db/schema";
@@ -29,20 +22,23 @@ export interface ResumeCardSummary {
   id: string;
   name: string;
   type: ResumeVersionType;
-  updatedAt: Date;
+  createdAt: Date;
   application?: { id: string; company: string; jobTitle: string } | null;
 }
 
-function originLabel(type: ResumeVersionType): string {
+/** BASE and AI resumes get a colored badge; PUBLIC (cloned) resumes get none, since a clone's whole point is to look like an ordinary resume. */
+function originBadge(
+  type: ResumeVersionType,
+): { label: string; variant: "default" | "outline" | "secondary" } | null {
   switch (type) {
-    case "MANUAL":
-      return "Manual";
-    case "PUBLIC":
-      return "Public";
     case "BASE":
-      return "Base";
+      return { label: "Base", variant: "secondary" };
+    case "PUBLIC":
+      return null;
+    case "MANUAL":
+      return { label: "Manual", variant: "outline" };
     default:
-      return "AI";
+      return { label: "AI", variant: "default" };
   }
 }
 
@@ -50,27 +46,39 @@ export function ResumeCard({
   resume,
   onDelete,
   isDeleting,
+  onClone,
+  isCloning,
 }: {
   resume: ResumeCardSummary;
   onDelete?: (id: string) => void;
   isDeleting?: boolean;
+  onClone?: (id: string) => void;
+  isCloning?: boolean;
 }) {
   const router = useRouter();
-  const [renameOpen, setRenameOpen] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(resume.name);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [isRenaming, startRename] = useTransition();
 
-  function openRename() {
-    setNameDraft(resume.name);
-    setRenameError(null);
-    setRenameOpen(true);
+  const badge = originBadge(resume.type);
+  const canClone = resume.type === "BASE" || resume.type === "PUBLIC";
+
+  function openResume() {
+    router.push(`/resumes/${resume.id}?from=resumes`);
   }
 
-  function handleRename() {
+  function startEditingName() {
+    setNameDraft(resume.name);
+    setRenameError(null);
+    setIsEditingName(true);
+  }
+
+  function commitRename() {
     const trimmed = nameDraft.trim();
     if (!trimmed || trimmed === resume.name) {
-      setRenameOpen(false);
+      setNameDraft(resume.name);
+      setIsEditingName(false);
       return;
     }
     startRename(async () => {
@@ -79,25 +87,72 @@ export function ResumeCard({
         setRenameError(result.error ?? "Failed to rename.");
         return;
       }
-      setRenameOpen(false);
+      setIsEditingName(false);
       router.refresh();
     });
   }
 
   return (
-    <Card>
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={openResume}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") openResume();
+      }}
+      className="cursor-pointer transition-colors hover:bg-muted/40"
+    >
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="min-w-0 truncate text-base">{resume.name}</CardTitle>
-          <Badge variant="outline" className="shrink-0">
-            {originLabel(resume.type)}
-          </Badge>
+          {isEditingName ? (
+            <Input
+              autoFocus
+              value={nameDraft}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                setNameDraft(e.target.value);
+                setRenameError(null);
+              }}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitRename();
+                }
+                if (e.key === "Escape") {
+                  setNameDraft(resume.name);
+                  setIsEditingName(false);
+                }
+              }}
+              disabled={isRenaming}
+              className="h-7 min-w-0 text-base font-medium"
+            />
+          ) : (
+            <CardTitle
+              className="min-w-0 truncate text-base"
+              onClick={(e) => {
+                e.stopPropagation();
+                startEditingName();
+              }}
+              title="Click to rename"
+            >
+              {resume.name}
+            </CardTitle>
+          )}
+          {badge && (
+            <Badge variant={badge.variant} className="shrink-0">
+              {badge.label}
+            </Badge>
+          )}
         </div>
+        {renameError && <p className="text-xs text-destructive">{renameError}</p>}
         {resume.application && (
           <CardDescription className="truncate">
             <Link
               href={`/applications/${resume.application.id}`}
               className="hover:text-foreground hover:underline"
+              onClick={(e) => e.stopPropagation()}
             >
               {resume.application.jobTitle} · {resume.application.company}
             </Link>
@@ -105,24 +160,33 @@ export function ResumeCard({
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <LocalDateTime date={resume.updatedAt} className="text-xs text-muted-foreground" />
+        <LocalDateTime date={resume.createdAt} className="text-xs text-muted-foreground" />
         <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/resumes/${resume.id}?from=resumes`} />}
-          >
-            <Pencil className="size-3.5" />
-            Open
-          </Button>
-          <Button size="sm" variant="outline" onClick={openRename}>
-            <SquarePen className="size-3.5" />
-            Rename
-          </Button>
+          {canClone && onClone && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClone(resume.id);
+              }}
+              disabled={isCloning}
+            >
+              {isCloning ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Copy className="size-3.5" />
+              )}
+              Clone
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
-            onClick={() => window.open(`/api/resume/${resume.id}/pdf`, "_blank")}
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(`/api/resume/${resume.id}/pdf`, "_blank");
+            }}
           >
             <Download className="size-3.5" />
             PDF
@@ -131,7 +195,10 @@ export function ResumeCard({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onDelete(resume.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(resume.id);
+              }}
               disabled={isDeleting}
               className="text-destructive hover:text-destructive"
             >
@@ -145,36 +212,6 @@ export function ResumeCard({
           )}
         </div>
       </CardContent>
-
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Rename resume</DialogTitle>
-          </DialogHeader>
-          <Input
-            autoFocus
-            value={nameDraft}
-            onChange={(e) => {
-              setNameDraft(e.target.value);
-              setRenameError(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleRename();
-              }
-            }}
-            placeholder="e.g. Fintech Resume, LinkedIn Resume"
-          />
-          {renameError && <p className="text-sm text-destructive">{renameError}</p>}
-          <DialogFooter>
-            <Button onClick={handleRename} disabled={isRenaming || !nameDraft.trim()}>
-              {isRenaming && <Loader2 className="size-3.5 animate-spin" />}
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

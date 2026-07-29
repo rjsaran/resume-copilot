@@ -1,4 +1,4 @@
-import { and, count, desc, eq, or } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { resumeVersions } from "@/lib/db/schema";
 import type {
@@ -16,6 +16,8 @@ export interface CreateResumeVersionInput {
   name: string;
   type: Extract<ResumeVersionType, "AI" | "MANUAL">;
   resume: ResumeData;
+  /** Extra context/instructions the user gave the AI at generation time - see resumeTailorPrompt.ts. Stored so it can be revisited later as a punch list of gaps worth folding into the Base Resume. */
+  note?: string;
 }
 
 /**
@@ -39,6 +41,7 @@ export async function createResumeVersion(
       name: input.name,
       type: input.type,
       resumeJson: JSON.stringify(input.resume),
+      generationNote: input.note?.trim() || null,
     })
     .returning();
   return version;
@@ -222,6 +225,48 @@ export async function deleteResumeVersion(id: string): Promise<void> {
 
 export interface TailoredResumeSummary extends ResumeVersion {
   application: Pick<Application, "id" | "company" | "jobTitle"> | null;
+}
+
+export interface GenerationNote {
+  id: string;
+  name: string;
+  note: string;
+  createdAt: Date;
+  application: Pick<Application, "id" | "company" | "jobTitle"> | null;
+}
+
+/**
+ * Every note the user has typed for the AI across all their tailored
+ * resumes, newest first - a punch list of things (like a skill the analysis
+ * missed) worth folding into the Base Resume permanently, rather than
+ * re-typing per application. Cleared one at a time via
+ * dismissGenerationNote once acted on.
+ */
+export async function getGenerationNotes(userId: string): Promise<GenerationNote[]> {
+  const rows = await db.query.resumeVersions.findMany({
+    where: and(eq(resumeVersions.userId, userId), isNotNull(resumeVersions.generationNote)),
+    orderBy: [desc(resumeVersions.createdAt)],
+    with: {
+      application: { columns: { id: true, company: true, jobTitle: true } },
+    },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    note: row.generationNote as string,
+    createdAt: row.createdAt,
+    application: row.application,
+  }));
+}
+
+/** Clears a generation note once the user has reviewed/acted on it - the version itself is untouched. */
+export async function dismissGenerationNote(id: string, userId: string): Promise<boolean> {
+  const updated = await db
+    .update(resumeVersions)
+    .set({ generationNote: null })
+    .where(and(eq(resumeVersions.id, id), eq(resumeVersions.userId, userId)))
+    .returning({ id: resumeVersions.id });
+  return updated.length > 0;
 }
 
 /**

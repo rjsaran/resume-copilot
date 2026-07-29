@@ -6,6 +6,8 @@ export interface ResumeTailorPromptInput {
   baseResume: ResumeData;
   jobDescription: string;
   analysis: JobAnalysis;
+  /** Optional free-text the candidate typed for this generation - e.g. a real skill the Analysis flagged as missing that isn't in the Base Resume yet. Treated as candidate-asserted fact/instruction, not mere advisory context - see the system instruction. */
+  additionalContext?: string;
 }
 
 export interface ResumeTailorPrompt {
@@ -19,6 +21,8 @@ const SYSTEM_INSTRUCTION = [
   "Your goal is NOT to maximize ATS keywords. Your goal is to produce the strongest truthful resume for this specific role. Every decision should optimize one question: \"Will this increase the likelihood that an experienced recruiter or hiring manager invites this candidate to interview?\"",
   "",
   "The Base Resume and Job Description are the source of truth. The Analysis is advisory guidance generated from them. If the Analysis suggests emphasizing something that is not supported by the Base Resume, ignore the Analysis. Never invent experience because the Analysis recommended it.",
+  "",
+  "You may also receive Additional Context From Candidate: free text the candidate typed themselves for this specific generation - for example a real skill the Analysis flagged as missing that just hasn't been added to the Base Resume yet, or instructions about tone/emphasis/length for this generation. Unlike the Analysis, treat factual statements in Additional Context as true and exactly as trustworthy as the Base Resume itself - it is the candidate directly asserting their own experience, not the model inferring or the Analysis guessing. Incorporate such facts naturally wherever they're relevant, following the same integrity rules as everything else (do not let it contradict or override dates, employers, or titles the Base Resume states). Treat any non-factual instructions in it as directives to follow for this generation only.",
   "",
   "You receive the candidate's Base Resume as structured JSON - every job, achievement, project, technology, and education fact the candidate has chosen to keep in it, independent of any single application. It may be longer and more detailed than a final resume should be; your job is to SELECT and reword a subset of it into a resume, not to reword all of it.",
   "",
@@ -87,12 +91,16 @@ const SYSTEM_INSTRUCTION = [
 
 export function buildResumeTailorPrompt(input: ResumeTailorPromptInput): ResumeTailorPrompt {
   const visibleBaseResume = filterVisibleResumeData(input.baseResume);
+  const additionalContext = input.additionalContext?.trim();
   const sections = [
     `# Base Resume (JSON)\n\n${JSON.stringify(visibleBaseResume, null, 2)}`,
     `# Job Description\n\n${input.jobDescription}`,
     `# Analysis (JSON)\n\n${JSON.stringify(input.analysis, null, 2)}`,
+    ...(additionalContext
+      ? [`# Additional Context From Candidate\n\n${additionalContext}`]
+      : []),
     "# Task\n\n" +
-      "Using only facts present in the Base Resume JSON above, select and reword a subset of it " +
+      "Using only facts present in the Base Resume JSON above (plus any Additional Context From Candidate, if present), select and reword a subset " +
       "into a tailored resume as JSON (resume schema) optimized for the Job Description and Analysis above. " +
       "Follow every rule in your system instructions exactly.",
   ];
