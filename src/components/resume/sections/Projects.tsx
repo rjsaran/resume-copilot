@@ -1,4 +1,5 @@
 import { SectionTitle } from "@/components/resume/sections/SectionTitle";
+import { withScheme } from "@/components/resume/withScheme";
 import type { ProjectEntry } from "@/types/resume";
 import type { ResumeTheme } from "@/components/resume/themes/types";
 
@@ -20,9 +21,23 @@ export function Projects({
         <article key={`${project.name}-${i}`} className={classes.wrapper}>
           <div className={classes.heading}>
             <span>{project.name}</span>
-            {project.location && <span>{project.location}</span>}
+            {(project.location || project.link) && (
+              <span className={classes.meta}>
+                {project.location}
+                {project.location && project.link && <span aria-hidden> &middot; </span>}
+                {project.link && (
+                  <a
+                    href={withScheme(project.link)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={classes.link}
+                  >
+                    {project.link}
+                  </a>
+                )}
+              </span>
+            )}
           </div>
-          {project.link && <p className={classes.meta}>{project.link}</p>}
           {project.bullets.length > 0 && (
             <ul className={classes.bullets}>
               {project.bullets.map((bullet, j) => (

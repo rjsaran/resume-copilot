@@ -11,7 +11,7 @@
 
 @page {
   size: A4;
-  margin: 16mm 18mm;
+  margin: 12mm 14mm;
 }
 
 .resume-page {
@@ -22,11 +22,61 @@
 
 @media screen {
   .resume-page {
-    margin: 24px auto;
-    padding: 16mm 18mm;
+    position: relative;
+    margin: 0 auto;
+    padding: 12mm 14mm;
     box-shadow:
       0 0 0 1px rgba(0, 0, 0, 0.08),
       0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  /*
+   * Preview-only page-break indicator. Content isn't actually split into
+   * separate page elements on screen (it's one continuously flowing box),
+   * so this approximates where Chromium's print engine (@page above) will
+   * break it: each physical page has 297mm total height minus the 12mm
+   * top/bottom margins, leaving 273mm of usable content per page.
+   *
+   * Drawn on a separate ::before layer (rather than directly on
+   * .resume-page's own background) for two reasons: it lets the line sit
+   * behind the real content instead of masking it, and it lets this box's
+   * own top edge be anchored exactly at the 12mm content offset - a
+   * repeating-linear-gradient's pattern repeats infinitely in both
+   * directions from its anchor, so trying to bake that 12mm offset into
+   * .resume-page's own background-position (via `12mm + 273mm`) collapses
+   * right back down to a spurious line at just 12mm (mod 273mm cancels the
+   * extra full page-height) - i.e. a line right under the header instead
+   * of at the real page break.
+   */
+  .resume-page::before {
+    content: "";
+    position: absolute;
+    top: 12mm;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(273mm - 1px),
+      var(--resume-page-break-color, #2563eb) calc(273mm - 1px),
+      var(--resume-page-break-color, #2563eb) 273mm
+    );
+    -webkit-mask-image: repeating-linear-gradient(
+      to right,
+      #000 0,
+      #000 3mm,
+      transparent 3mm,
+      transparent 5mm
+    );
+    mask-image: repeating-linear-gradient(
+      to right,
+      #000 0,
+      #000 3mm,
+      transparent 3mm,
+      transparent 5mm
+    );
   }
 }
 
@@ -40,8 +90,13 @@
 
 /* Page-break control -------------------------------------------------- */
 
-/* Keep a single experience/project/education entry from splitting across
-   a page break whenever the entry itself fits on one page. */
+/* Keep a single line (e.g. one bullet) from splitting across a page break.
+ * Deliberately NOT applied to whole experience/project/education entries -
+ * an entry with many bullets that doesn't fully fit in the remaining space
+ * would otherwise get pushed to the next page wholesale, leaving a dead
+ * gap behind it and inflating the page count well beyond what the
+ * (non-paginating) on-screen preview shows.
+ */
 .resume-avoid-break {
   break-inside: avoid;
   page-break-inside: avoid;
@@ -49,6 +104,16 @@
 
 /* Never leave a section title as the last line on a page (orphan heading). */
 .resume-heading {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+/* Keep an entry's heading/meta glued to whatever comes right after it (the
+ * next meta line, or the first bullet) - avoids a role/company/date line
+ * being stranded alone at the bottom of a page while its bullets start on
+ * the next one. Applied per-line rather than around the whole entry so
+ * bullets are still free to flow and split across the page boundary. */
+.resume-keep-with-next {
   break-after: avoid;
   page-break-after: avoid;
 }

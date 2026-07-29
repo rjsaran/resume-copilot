@@ -9,12 +9,13 @@ export interface ResumeTheme {
       title: string;
       contactRow: string;
       contactItem: string;
+      linksRow: string;
+      link: string;
     };
     section: {
       wrapper: string;
       title: string;
     };
-    divider: string;
     summary: string;
     experience: {
       wrapper: string;
@@ -30,6 +31,7 @@ export interface ResumeTheme {
       wrapper: string;
       heading: string;
       meta: string;
+      link: string;
       bullets: string;
       bulletItem: string;
       technologies: string;

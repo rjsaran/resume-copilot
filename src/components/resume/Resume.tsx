@@ -10,7 +10,6 @@ import { Experience } from "@/components/resume/sections/Experience";
 import { Projects } from "@/components/resume/sections/Projects";
 import { Skills } from "@/components/resume/sections/Skills";
 import { Education } from "@/components/resume/sections/Education";
-import { Divider } from "@/components/resume/sections/Divider";
 import { filterVisibleResumeData } from "@/lib/resume/visibility";
 import { cn } from "@/lib/utils";
 import type { ResumeData } from "@/types/resume";
@@ -36,7 +35,6 @@ export function Resume({
   return (
     <div className={cn(theme.classes.page, resumeFont.className, className)}>
       <Header theme={theme} basics={visible.basics} />
-      <Divider theme={theme} />
       <Summary theme={theme} summary={visible.basics.summary} />
       <Experience theme={theme} entries={visible.experience} />
       <Projects theme={theme} entries={visible.projects} />
